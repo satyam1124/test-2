@@ -2459,6 +2459,7 @@
         }
 
         // Map - COLORFUL REALISTIC VERSION
+        // FIXED: Red dot (MOB) now shows popup correctly
         function initMap() {
             if (map) {
                 map.invalidateSize();
@@ -2478,11 +2479,11 @@
             // Add default layer (satellite)
             mapLayers.satellite.addTo(map);
             
-            // Add device markers
+            // Add device markers - FIXED VERSION
             devices.forEach(d => {
                 const color = d.alert ? '#ef4444' : d.status === 'offline' ? '#6b7280' : '#10b981';
                 
-                // Main marker
+                // Main marker - this will have the popup
                 const marker = L.circleMarker([d.lat, d.lng], {
                     radius: d.alert ? 20 : 12,
                     fillColor: color,
@@ -2492,14 +2493,16 @@
                     fillOpacity: 0.9
                 }).addTo(map);
                 
-                // Pulse effect for alerts
+                // Pulse effect for alerts - FIXED: Added interactive: false
                 if (d.alert) {
                     const pulse = L.circleMarker([d.lat, d.lng], {
                         radius: 35,
                         fillColor: color,
                         color: color,
                         weight: 0,
-                        fillOpacity: 0.4
+                        fillOpacity: 0.4,
+                        interactive: false,  // CRITICAL FIX: Allows clicks to pass through to main marker
+                        bubblingMouseEvents: false  // Prevents event bubbling issues
                     }).addTo(map);
                     
                     // Animate pulse
@@ -2516,7 +2519,7 @@
                     }, 100);
                 }
                 
-                // Enhanced popup
+                // Enhanced popup - now works for ALL markers including red alert ones
                 marker.bindPopup(`
                     <div style="min-width: 200px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
                         <div style="background: ${color}; color: white; padding: 10px; margin: -15px -15px 10px -15px; border-radius: 8px 8px 0 0; font-weight: 600;">
