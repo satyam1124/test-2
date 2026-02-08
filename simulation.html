@@ -28,6 +28,7 @@
             color: var(--text-primary);
             overflow: hidden;
             height: 100vh;
+            width: 100vw;
         }
 
         /* Header */
@@ -39,6 +40,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 25px;
+            z-index: 1000;
+            position: relative;
         }
 
         .logo {
@@ -74,6 +77,7 @@
             display: grid;
             grid-template-columns: 300px 1fr 350px;
             height: calc(100vh - 60px);
+            width: 100%;
         }
 
         /* Sidebar */
@@ -82,6 +86,7 @@
             border-right: 1px solid var(--border-color);
             padding: 20px;
             overflow-y: auto;
+            height: 100%;
         }
 
         .panel-title {
@@ -150,15 +155,19 @@
             margin-bottom: 4px;
         }
 
-        /* Map Container */
+        /* Map Container - FIXED HEIGHT */
         .map-container {
             position: relative;
-            background: #001122;
+            background: #1a1f2e;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
         }
 
         #map {
-            width: 100%;
-            height: 100%;
+            height: 100% !important;
+            width: 100% !important;
+            background: #001122;
             z-index: 1;
         }
 
@@ -167,12 +176,13 @@
             top: 20px;
             left: 20px;
             z-index: 1000;
-            background: rgba(10, 22, 40, 0.9);
+            background: rgba(10, 22, 40, 0.95);
             padding: 15px;
             border-radius: 12px;
             border: 1px solid var(--border-color);
             backdrop-filter: blur(10px);
-            max-width: 280px;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
         .coord-display {
@@ -180,6 +190,7 @@
             font-size: 0.9rem;
             color: var(--marine-accent);
             margin-bottom: 8px;
+            line-height: 1.4;
         }
 
         .env-data {
@@ -196,6 +207,7 @@
             border-left: 1px solid var(--border-color);
             padding: 20px;
             overflow-y: auto;
+            height: 100%;
         }
 
         .control-group {
@@ -394,9 +406,26 @@
             color: black;
         }
 
-        /* Custom Markers */
+        .survival-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .survival-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--alert-red), var(--warning-yellow), var(--safe-green));
+            transition: width 1s;
+        }
+
+        /* Map Marker Styles */
         .vessel-icon {
             filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.8));
+            font-size: 24px;
+            color: #00d4ff;
         }
 
         .crew-icon {
@@ -418,19 +447,9 @@
             50% { transform: scale(1.4); opacity: 0.8; }
         }
 
-        .survival-bar {
-            width: 100%;
-            height: 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .survival-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--alert-red), var(--warning-yellow), var(--safe-green));
-            transition: width 1s;
+        /* Leaflet customizations */
+        .leaflet-container {
+            background: #001122 !important;
         }
 
         @media (max-width: 1024px) {
@@ -548,7 +567,7 @@
             
             <div class="map-overlay">
                 <div class="coord-display" id="vessel-coords">
-                    Vessel: N 00° 00.000' E 000° 00.000'
+                    Vessel: N 50° 54.582' W 01° 24.264'
                 </div>
                 <div class="coord-display" id="wind-data" style="margin-top: 5px;">
                     Wind: 15kt NW
@@ -573,7 +592,7 @@
             <div class="control-group">
                 <label class="control-label">Map Type</label>
                 <select id="map-theme" onchange="MapManager.changeTheme(this.value)">
-                    <option value="satellite">Satellite (Realistic)</option>
+                    <option value="satellite" selected>Satellite (Realistic)</option>
                     <option value="standard">Standard (Colorful)</option>
                     <option value="nautical">Nautical Charts</option>
                 </select>
@@ -587,7 +606,7 @@
             <div class="control-group">
                 <label class="control-label">Environment</label>
                 <select id="env-preset" onchange="TelemetrySystem.setEnvironment(this.value)">
-                    <option value="channel">English Channel (12°C)</option>
+                    <option value="channel" selected>English Channel (12°C)</option>
                     <option value="med">Mediterranean (22°C)</option>
                     <option value="arctic">Arctic (2°C)</option>
                     <option value="tropical">Tropical (28°C)</option>
@@ -646,15 +665,24 @@
             },
 
             init() {
+                console.log('Initializing Telemetry System...');
                 this.initAudio();
                 this.initializeScenario();
-                MapManager.init();
-                this.startSimulation();
-                this.updateUI();
                 
+                // Initialize map after a short delay to ensure DOM is ready
+                setTimeout(() => {
+                    MapManager.init();
+                    this.startSimulation();
+                    this.updateUI();
+                }, 100);
+                
+                // Update UTC clock
                 setInterval(() => {
-                    document.getElementById('utc-time').textContent = new Date().toISOString().split('T')[1].split('.')[0];
+                    const now = new Date();
+                    document.getElementById('utc-time').textContent = now.toISOString().split('T')[1].split('.')[0];
                 }, 1000);
+                
+                console.log('Initialization complete');
             },
 
             initAudio() {
@@ -718,24 +746,29 @@
                     }
                 ];
 
-                this.updateMapMarkers();
                 this.logEvent('System', 'Simulation initialized - English Channel');
             },
 
             startSimulation() {
+                if (this.isRunning) return;
                 this.isRunning = true;
                 this.simulationInterval = setInterval(() => {
                     this.simulationStep();
                 }, 1000 / this.speedMultiplier);
+                console.log('Simulation started');
             },
 
             simulationStep() {
-                this.updateVesselPosition();
-                this.updateCrewPositions();
-                this.updateBiometrics();
-                this.checkAlerts();
-                this.updateUI();
-                this.dataPoints++;
+                try {
+                    this.updateVesselPosition();
+                    this.updateCrewPositions();
+                    this.updateBiometrics();
+                    this.checkAlerts();
+                    this.updateUI();
+                    this.dataPoints++;
+                } catch (e) {
+                    console.error('Simulation step error:', e);
+                }
             },
 
             updateVesselPosition() {
@@ -750,7 +783,9 @@
                 
                 this.vessel.heading += (Math.random() - 0.5) * 0.1;
                 
-                MapManager.updateVesselPosition(this.vessel.position.lat, this.vessel.position.lon, this.vessel.heading);
+                if (MapManager.map && MapManager.markers.vessel) {
+                    MapManager.updateVesselPosition(this.vessel.position.lat, this.vessel.position.lon, this.vessel.heading);
+                }
                 
                 document.getElementById('vessel-coords').textContent = 
                     `Vessel: ${this.formatCoords(this.vessel.position.lat, this.vessel.position.lon)}`;
@@ -778,7 +813,9 @@
                         member.position.lon = this.vessel.position.lon + (Math.random() - 0.5) * 0.0001;
                     }
                     
-                    MapManager.updateCrewMarker(member);
+                    if (MapManager.map) {
+                        MapManager.updateCrewMarker(member);
+                    }
                 });
             },
 
@@ -908,7 +945,10 @@
                 
                 this.triggerAlert('mob', `MAN OVERBOARD: ${victim.name} (${victim.role})`);
                 this.showMOBModal(victim);
-                MapManager.map.setView([victim.position.lat, victim.position.lon], 15);
+                
+                if (MapManager.map) {
+                    MapManager.map.setView([victim.position.lat, victim.position.lon], 15);
+                }
                 
                 this.logEvent('MOB', `Man overboard detected: ${victim.name}`);
             },
@@ -942,7 +982,7 @@
 
             initiateSearchPattern() {
                 const mob = this.crew.find(c => c.status === 'mob');
-                if (mob) {
+                if (mob && MapManager.map) {
                     MapManager.drawSearchPattern(mob.position);
                     this.logEvent('SAR', `Search pattern initiated for ${mob.name}`);
                 }
@@ -985,13 +1025,14 @@
                     c.lowBatteryAlert = false;
                 });
                 this.alerts = [];
-                MapManager.clearSearchPattern();
+                if (MapManager.map) MapManager.clearSearchPattern();
                 this.logEvent('System', 'Simulation reset');
                 this.updateUI();
             },
 
             logEvent(type, message) {
                 const log = document.getElementById('alert-log');
+                if (!log) return;
                 const entry = document.createElement('div');
                 entry.className = `log-entry ${type === 'MOB' || type === 'critical' ? 'critical' : ''}`;
                 entry.innerHTML = `
@@ -1022,18 +1063,16 @@
                 
                 // Update crew list
                 const crewList = document.getElementById('crew-list');
-                crewList.innerHTML = this.crew.map(c => `
-                    <div style="padding: 8px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 5px; border-left: 3px solid ${c.status === 'mob' ? '#ff00ff' : c.status === 'safe' ? '#00ff88' : '#ffaa00'};">
-                        <strong>${c.name}</strong> (${c.id})<br>
-                        <span style="color: ${c.status === 'mob' ? '#ff00ff' : '#aaa'}; font-size: 0.8rem;">
-                            ${c.status === 'mob' ? '⚠️ MAN OVERBOARD' : c.status} | ${c.biometrics.heartRate} bpm
-                        </span>
-                    </div>
-                `).join('');
-            },
-
-            updateMapMarkers() {
-                this.crew.forEach(c => MapManager.updateCrewMarker(c));
+                if (crewList) {
+                    crewList.innerHTML = this.crew.map(c => `
+                        <div style="padding: 8px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 5px; border-left: 3px solid ${c.status === 'mob' ? '#ff00ff' : c.status === 'safe' ? '#00ff88' : '#ffaa00'};">
+                            <strong>${c.name}</strong> (${c.id})<br>
+                            <span style="color: ${c.status === 'mob' ? '#ff00ff' : '#aaa'}; font-size: 0.8rem;">
+                                ${c.status === 'mob' ? '⚠️ MAN OVERBOARD' : c.status} | ${c.biometrics.heartRate} bpm
+                            </span>
+                        </div>
+                    `).join('');
+                }
             },
 
             formatCoords(lat, lon) {
@@ -1059,21 +1098,37 @@
             searchPattern: null,
 
             init() {
-                this.map = L.map('map', { zoomControl: false }).setView([50.9097, -1.4044], 13);
+                console.log('Initializing Map...');
+                
+                // Check if map container exists
+                const mapContainer = document.getElementById('map');
+                if (!mapContainer) {
+                    console.error('Map container not found!');
+                    return;
+                }
+                
+                // Initialize map
+                this.map = L.map('map', { 
+                    zoomControl: false,
+                    center: [50.9097, -1.4044],
+                    zoom: 13
+                });
 
-                // COLORFUL MAP LAYERS
+                // Define layers
                 this.layers = {
                     satellite: L.layerGroup([
                         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                            attribution: 'Esri'
+                            attribution: 'Esri',
+                            maxZoom: 19
                         }),
                         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+                            attribution: '&copy; CARTO',
                             subdomains: 'abcd',
-                            maxZoom: 19
+                            maxZoom: 20
                         })
                     ]),
                     standard: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap',
+                        attribution: '&copy; OpenStreetMap',
                         maxZoom: 19
                     }),
                     nautical: L.layerGroup([
@@ -1084,34 +1139,47 @@
                     ])
                 };
 
+                // Add default layer
                 this.layers.satellite.addTo(this.map);
+                
+                // Add zoom control
                 L.control.zoom({ position: 'bottomright' }).addTo(this.map);
-
-                // Vessel marker with rotation
+                
+                // Add vessel marker
                 const vesselIcon = L.divIcon({
                     className: 'vessel-icon',
-                    html: '<div style="font-size: 24px; color: #00d4ff; filter: drop-shadow(0 0 5px #00d4ff);"><i class="fas fa-ship"></i></div>',
+                    html: '<i class="fas fa-ship"></i>',
                     iconSize: [30, 30],
                     iconAnchor: [15, 15]
                 });
 
                 this.markers.vessel = L.marker([50.9097, -1.4044], { icon: vesselIcon }).addTo(this.map);
                 this.markers.vessel.bindPopup('<b>M/V GUARDIAN</b><br>IMO: 9876543<br>Speed: 18.5 knots');
+                
+                // Add crew markers
+                TelemetrySystem.crew.forEach(c => this.updateCrewMarker(c));
+                
+                console.log('Map initialized successfully');
             },
 
             changeTheme(theme) {
-                Object.values(this.layers).forEach(l => {
-                    if (this.map.hasLayer(l)) this.map.removeLayer(l);
+                if (!this.map) return;
+                
+                // Remove all layers
+                Object.values(this.layers).forEach(layer => {
+                    if (this.map.hasLayer(layer)) this.map.removeLayer(layer);
                 });
-                if (theme === 'nautical' || theme === 'satellite') {
-                    this.layers[theme].addTo(this.map);
-                } else {
-                    this.layers.standard.addTo(this.map);
-                }
+                
+                // Add selected layer
+                this.layers[theme].addTo(this.map);
             },
 
             updateVesselPosition(lat, lon, heading) {
+                if (!this.map || !this.markers.vessel) return;
+                
                 this.markers.vessel.setLatLng([lat, lon]);
+                
+                // Rotate icon
                 const icon = this.markers.vessel.getElement();
                 if (icon) {
                     icon.style.transform = `${icon.style.transform} rotate(${heading}deg)`;
@@ -1119,6 +1187,8 @@
             },
 
             updateCrewMarker(member) {
+                if (!this.map) return;
+                
                 const colors = {
                     safe: '#00ff88',
                     warning: '#ffaa00',
@@ -1131,7 +1201,8 @@
                 
                 const icon = L.divIcon({
                     className: isMob ? 'mob-icon-map' : 'crew-icon',
-                    html: isMob ? '' : `<div style="background: ${colors[member.status]}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px ${colors[member.status]};"></div>`,
+                    html: isMob ? '<div style="width: 20px; height: 20px; background: #ff3333; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 20px rgba(255,51,51,0.8);"></div>' : 
+                          `<div style="background: ${colors[member.status]}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px ${colors[member.status]};"></div>`,
                     iconSize: [size, size],
                     iconAnchor: [size/2, size/2]
                 });
@@ -1154,6 +1225,7 @@
             },
 
             drawSearchPattern(center) {
+                if (!this.map) return;
                 if (this.searchPattern) this.map.removeLayer(this.searchPattern);
                 
                 const points = [];
@@ -1177,15 +1249,16 @@
             },
 
             clearSearchPattern() {
-                if (this.searchPattern) {
+                if (this.searchPattern && this.map) {
                     this.map.removeLayer(this.searchPattern);
                     this.searchPattern = null;
                 }
             }
         };
 
-        // Initialize on load
+        // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, starting initialization...');
             TelemetrySystem.init();
         });
     </script>
