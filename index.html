@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOB Guard - Maritime Security System</title>
+    
+    <!-- External Libraries (CDN for GitHub Pages) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --marine-dark: #0a1628;
+            --marine-darker: #070f1a;
+            --marine-accent: #00d4ff;
+            --alert-red: #ff3333;
+            --warning-yellow: #ffaa00;
+            --safe-green: #00ff88;
+            --text-primary: #e0f7ff;
+            --text-secondary: #8b9cb5;
+            --border-color: #1e3a5f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--marine-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Login Screen */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--marine-darker) 0%, #001a33 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s;
+        }
+
+        .login-container {
+            background: rgba(14, 30, 50, 0.95);
+            padding: 3rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 60px rgba(0, 212, 255, 0.1);
+            width: 90%;
+            max-width: 450px;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header i {
+            font-size: 3rem;
+            color: var(--marine-accent);
+            margin-bottom: 1rem;
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--marine-accent);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--marine-accent), #0099cc);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .credentials-hint {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Main Dashboard */
+        #dashboard {
+            display: none;
+            height: 100vh;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 60px 1fr;
+            gap: 1px;
+            background: var(--marine-darker);
+        }
+
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(10, 22, 40, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--marine-accent);
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .alert-badge {
+            background: var(--alert-red);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-weight: bold;
+            animation: blink 1s infinite;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+
+        .user-menu:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: rgba(10, 22, 40, 0.9);
+            padding: 1.5rem;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .stat-card {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateX(5px);
+            border-color: var(--marine-accent);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--marine-accent);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .status-safe { border-left: 3px solid var(--safe-green); }
+        .status-warning { border-left: 3px solid var(--warning-yellow); }
+        .status-alert { border-left: 3px solid var(--alert-red); }
+
+        .status-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        /* Map Container */
+        .map-container {
+            position: relative;
+            background: #001122;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1000;
+            background: rgba(10, 22, 40, 0.9);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .coordinate-display {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: var(--marine-accent);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: rgba(10, 22, 40, 0.9);
+            padding: 1.5rem;
+            overflow-y: auto;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .panel-section {
+            margin-bottom: 2rem;
+        }
+
+        .panel-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        select, input[type="range"], input[type="number"] {
+            width: 100%;
+            padding: 0.6rem;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--border-color);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--marine-accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: var(--border-color);
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .switch.active {
+            background: var(--marine-accent);
+        }
+
+        .switch-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .switch.active .switch-thumb {
+            transform: translateX(24px);
+        }
+
+        .alert-log {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .log-entry {
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid var(--marine-accent);
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.85rem;
+        }
+
+        .log-entry.critical {
+            border-left-color: var(--alert-red);
+            background: rgba(255, 51, 51, 0.1);
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-bottom: 0.3rem;
+        }
+
+        /* MOB Alert Modal */
+        .mob-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10001;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .mob-content {
+            background: linear-gradient(135deg, #1a0a0a 0%, #2a1515 100%);
+            border: 2px solid var(--alert-red);
+            border-radius: 16px;
+            padding: 3rem;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 51, 51, 0.5);
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 50px rgba(255, 51, 51, 0.5); }
+            50% { box-shadow: 0 0 80px rgba(255, 51, 51, 0.8); }
+        }
+
+        .mob-icon {
+            font-size: 4rem;
+            color: var(--alert-red);
+            margin-bottom: 1rem;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .mob-title {
+            font-size: 2.5rem;
+            color: var(--alert-red);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .mob-details {
+            margin: 2rem 0;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .mob-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn-emergency {
+            flex: 1;
+            padding: 1rem;
+            background: var(--alert-red);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-emergency:hover {
+            background: #ff5555;
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            #dashboard {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr auto;
+            }
+            
+            .sidebar, .control-panel {
+                display: none; /* Simplified for mobile - can add toggle */
+            }
+        }
+
+        /* Custom Leaflet Markers */
+        .vessel-marker {
+            background: var(--marine-accent);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+        }
+
+        .crew-marker {
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .mob-marker {
+            background: var(--alert-red);
+            border: 3px solid white;
+            border-radius: 50%;
+            animation: mob-pulse 1s infinite;
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.8);
+        }
+
+        @keyframes mob-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+
+        .search-pattern-line {
+            stroke: var(--warning-yellow);
+            stroke-width: 2;
+            stroke-dasharray: 10, 10;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <i class="fas fa-anchor"></i>
+                <h1>MOB Guard</h1>
+                <p>Maritime Security & Safety System</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="username" placeholder="Enter username" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="Enter password" required>
+                </div>
+                
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Access System
+                </button>
+            </form>
+            
+            <div class="credentials-hint">
+                <strong>Demo Credentials:</strong><br>
+                Admin: <code>admin</code> / <code>admin123</code><br>
+                Viewer: <code>viewer</code> / <code>viewer123</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOB Emergency Modal -->
+    <div id="mob-modal" class="mob-modal">
+        <div class="mob-content">
+            <i class="fas fa-life-ring mob-icon"></i>
+            <h2 class="mob-title">MAN OVERBOARD!</h2>
+            <p style="color: #ff8888; margin-bottom: 1rem;">Immediate Action Required</p>
+            
+            <div class="mob-details" id="mob-details">
+                <!-- Dynamic content -->
+            </div>
+            
+            <div class="mob-actions">
+                <button class="btn-emergency" onclick="TelemetrySystem.acknowledgeMOB()">
+                    <i class="fas fa-check"></i> Acknowledge Alert
+                </button>
+                <button class="btn-secondary" onclick="TelemetrySystem.initiateSearchPattern()">
+                    <i class="fas fa-search-location"></i> Start SAR Pattern
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-ship"></i>
+                <span>MOB Guard</span>
+            </div>
+            
+            <div class="header-controls">
+                <div class="alert-badge" id="alert-badge" style="display: none;" onclick="TelemetrySystem.showActiveAlerts()">
+                    <i class="fas fa-bell"></i>
+                    <span id="alert-count">0</span> ALERTS
+                </div>
+                
+                <div class="user-menu" onclick="AuthManager.logout()">
+                    <i class="fas fa-user-circle" style="font-size: 1.5rem; color: var(--marine-accent);"></i>
+                    <span id="current-user">Admin</span>
+                    <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Left Sidebar: Stats -->
+        <aside class="sidebar">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span>Active Alerts</span>
+                    <i class="fas fa-exclamation-triangle" style="color: var(--alert-red);"></i>
+                </div>
+                <div class="stat-value" id="stat-alerts">0</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    <span id="critical-count" style="color: var(--alert-red); font-weight: bold;">0</span> Critical
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span>Total Records</span>
+                    <i class="fas fa-database" style="color: var(--marine-accent);"></i>
+                </div>
+                <div class="stat-value" id="stat-records">0</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    Telemetry entries
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span>Crew Members</span>
+                    <i class="fas fa-users" style="color: var(--safe-green);"></i>
+                </div>
+                <div class="stat-value" id="stat-crew">4</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    Assigned devices
+                </div>
+            </div>
+
+            <div class="status-grid">
+                <div class="status-item status-safe">
+                    <span class="status-number" id="count-safe" style="color: var(--safe-green);">0</span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Safe</span>
+                </div>
+                <div class="status-item status-warning">
+                    <span class="status-number" id="count-warning" style="color: var(--warning-yellow);">0</span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Warning</span>
+                </div>
+                <div class="status-item status-alert">
+                    <span class="status-number" id="count-alert" style="color: var(--alert-red);">0</span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Alert</span>
+                </div>
+                <div class="status-item" style="border-left: 3px solid #ff00ff;">
+                    <span class="status-number" id="count-mob" style="color: #ff00ff;">0</span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">MOB</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center: Map -->
+        <main class="map-container">
+            <div id="map"></div>
+            
+            <div class="map-overlay">
+                <div class="coordinate-display" id="vessel-coords">
+                    Vessel: N 00° 00.000' E 000° 00.000'
+                </div>
+                <div class="coordinate-display" id="environment-data">
+                    Wind: 15kt NW | Current: 2.3kt 240°
+                </div>
+                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                    <i class="fas fa-clock"></i> UTC: <span id="utc-time">--:--:--</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel: Controls -->
+        <aside class="control-panel">
+            <div class="panel-section">
+                <div class="panel-title">
+                    <i class="fas fa-layer-group"></i> Map Configuration
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Chart Type</label>
+                    <select id="map-theme" onchange="MapManager.changeTheme(this.value)">
+                        <option value="dark">Dark (Marine)</option>
+                        <option value="satellite">Satellite</option>
+                        <option value="nautical">Nautical Charts</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">Simulation Speed</label>
+                    <input type="range" id="sim-speed" min="1" max="10" value="1" onchange="TelemetrySystem.setSimulationSpeed(this.value)">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.3rem;">
+                        <span>1x</span>
+                        <span id="speed-display">1x</span>
+                        <span>10x</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">
+                    <i class="fas fa-sliders-h"></i> System Settings
+                </div>
+                
+                <div class="toggle-switch">
+                    <span>Auto Refresh</span>
+                    <div class="switch active" onclick="SettingsManager.toggle('autoRefresh', this)">
+                        <div class="switch-thumb"></div>
+                    </div>
+                </div>
+
+                <div class="toggle-switch">
+                    <span>Push Notifications</span>
+                    <div class="switch" onclick="SettingsManager.toggle('pushNotifications', this)">
+                        <div class="switch-thumb"></div>
+                    </div>
+                </div>
+
+                <div class="control-group" style="margin-top: 1rem;">
+                    <label class="control-label">Data Retention (days)</label>
+                    <input type="number" id="retention-days" value="30" min="1" max="365" onchange="SettingsManager.setRetention(this.value)">
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">
+                    <i class="fas fa-history"></i> Recent Alerts
+                </div>
+                <div class="alert-log" id="alert-log">
+                    <!-- Dynamic entries -->
+                </div>
+            </div>
+
+            <div class="panel-section" style="margin-top: auto;">
+                <button class="btn-primary" onclick="TelemetrySystem.simulateMOB()" style="background: linear-gradient(135deg, #ff3333, #cc0000);">
+                    <i class="fas fa-exclamation-circle"></i> Simulate MOB Event
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // ==========================================
+        // MODULE 1: Authentication System
+        // ==========================================
+        const AuthManager = {
+            users: [
+                { username: 'admin', password: 'admin123', role: 'admin', name: 'Captain Admin' },
+                { username: 'viewer', password: 'viewer123', role: 'viewer', name: 'Deck Officer' }
+            ],
+            
+            currentUser: null,
+            sessionTimeout: null,
+
+            init() {
+                // Check existing session
+                const session = sessionStorage.getItem('mob_session');
+                if (session) {
+                    const data = JSON.parse(session);
+                    if (data.exp > Date.now()) {
+                        this.currentUser = data;
+                        this.showDashboard();
+                        return;
+                    }
+                }
+                
+                document.getElementById('login-screen').style.display = 'flex';
+                
+                document.getElementById('login-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.login();
+                });
+            },
+
+            login() {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                const user = this.users.find(u => u.username === username && u.password === password);
+                
+                if (user) {
+                    this.currentUser = user;
+                    const sessionData = {
+                        ...user,
+                        exp: Date.now() + (SettingsManager.get('sessionTimeout', 30) * 60000)
+                    };
+                    sessionStorage.setItem('mob_session', JSON.stringify(sessionData));
+                    
+                    // Clear password
+                    document.getElementById('password').value = '';
+                    
+                    this.showDashboard();
+                    TelemetrySystem.init();
+                } else {
+                    alert('Invalid credentials');
+                }
+            },
+
+            showDashboard() {
+                document.getElementById('login-screen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'grid';
+                }, 500);
+                
+                document.getElementById('current-user').textContent = this.currentUser.name;
+                
+                // Set session timeout
+                const timeout = SettingsManager.get('sessionTimeout', 30);
+                this.sessionTimeout = setTimeout(() => this.logout(), timeout * 60000);
+            },
+
+            logout() {
+                clearTimeout(this.sessionTimeout);
+                sessionStorage.removeItem('mob_session');
+                location.reload();
+            },
+
+            checkPermission(action) {
+                if (!this.currentUser) return false;
+                if (this.currentUser.role === 'admin') return true;
+                return ['view', 'acknowledge'].includes(action);
+            }
+        };
+
+        // ==========================================
+        // MODULE 2: Settings Management
+        // ==========================================
+        const SettingsManager = {
+            defaults: {
+                autoRefresh: true,
+                pushNotifications: false,
+                dataRetention: 30,
+                sessionTimeout: 30,
+                mapTheme: 'dark',
+                simulationSpeed: 1
+            },
+
+            init() {
+                // Load saved settings
+                Object.keys(this.defaults).forEach(key => {
+                    if (localStorage.getItem(`mob_${key}`) === null) {
+                        localStorage.setItem(`mob_${key}`, JSON.stringify(this.defaults[key]));
+                    }
+                });
+            },
+
+            get(key, defaultValue = null) {
+                const saved = localStorage.getItem(`mob_${key}`);
+                return saved ? JSON.parse(saved) : (defaultValue || this.defaults[key]);
+            },
+
+            set(key, value) {
+                localStorage.setItem(`mob_${key}`, JSON.stringify(value));
+            },
+
+            toggle(key, element) {
+                const current = this.get(key);
+                this.set(key, !current);
+                element.classList.toggle('active');
+            },
+
+            setRetention(days) {
+                this.set('dataRetention', parseInt(days));
+            }
+        };
+
+        // ==========================================
+        // MODULE 3: Map Management
+        // ==========================================
+        const MapManager = {
+            map: null,
+            layers: {},
+            markers: {},
+            tracks: {},
+            searchPattern: null,
+
+            init() {
+                // Initialize map centered on Atlantic shipping lane (demo)
+                this.map = L.map('map', {
+                    zoomControl: false,
+                    attributionControl: false
+                }).setView([48.8566, -2.3522], 13); // English Channel area
+
+                // Add zoom control to top right
+                L.control.zoom({ position: 'topright' }).addTo(this.map);
+
+                // Define layer sources
+                this.layers = {
+                    dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; CARTO',
+                        subdomains: 'abcd',
+                        maxZoom: 19
+                    }),
+                    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: 'Esri'
+                    }),
+                    nautical: L.layerGroup([
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+                        L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+                            attribution: 'OpenSeaMap'
+                        })
+                    ])
+                };
+
+                this.layers.dark.addTo(this.map);
+                this.currentLayer = 'dark';
+
+                // Add vessel icon
+                const vesselIcon = L.divIcon({
+                    className: 'vessel-marker',
+                    html: '<i class="fas fa-ship" style="color: white; font-size: 16px; line-height: 30px; text-align: center; display: block;"></i>',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+
+                this.markers.vessel = L.marker([48.8566, -2.3522], { icon: vesselIcon }).addTo(this.map);
+                this.markers.vessel.bindPopup('<b>M/V GUARDIAN</b><br>Type: Container Ship<br>IMO: 9876543');
+            },
+
+            changeTheme(theme) {
+                if (theme === this.currentLayer) return;
+                
+                this.map.removeLayer(this.layers[this.currentLayer]);
+                
+                if (theme === 'nautical') {
+                    this.layers.nautical.addTo(this.map);
+                } else {
+                    this.layers[theme].addTo(this.map);
+                }
+                
+                this.currentLayer = theme;
+                SettingsManager.set('mapTheme', theme);
+            },
+
+            updateVesselPosition(lat, lon, heading) {
+                this.markers.vessel.setLatLng([lat, lon]);
+                this.markers.vessel.setRotationAngle(heading);
+            },
+
+            addCrewMarker(crewId, lat, lon, status) {
+                const colors = {
+                    safe: '#00ff88',
+                    warning: '#ffaa00',
+                    alert: '#ff3333',
+                    mob: '#ff00ff'
+                };
+
+                const icon = L.divIcon({
+                    className: `crew-marker ${status === 'mob' ? 'mob-marker' : ''}`,
+                    html: `<div style="background: ${colors[status] || colors.safe}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px ${colors[status]};"></div>`,
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7]
+                });
+
+                if (this.markers[crewId]) {
+                    this.markers[crewId].setLatLng([lat, lon]);
+                    this.markers[crewId].setIcon(icon);
+                } else {
+                    this.markers[crewId] = L.marker([lat, lon], { icon }).addTo(this.map);
+                }
+                
+                return this.markers[crewId];
+            },
+
+            drawSearchPattern(center, pattern = 'expanding_square') {
+                if (this.searchPattern) {
+                    this.map.removeLayer(this.searchPattern);
+                }
+
+                const points = [];
+                const [lat, lon] = [center.lat, center.lon];
+                
+                if (pattern === 'expanding_square') {
+                    // Standard IAMSAR expanding square
+                    let leg = 0.001; // degrees
+                    let direction = 0;
+                    
+                    for (let i = 0; i < 20; i++) {
+                        const newLat = lat + (leg * Math.cos(direction * Math.PI/180));
+                        const newLon = lon + (leg * Math.sin(direction * Math.PI/180) / Math.cos(lat * Math.PI/180));
+                        points.push([newLat, newLon]);
+                        direction += Math.PI/2;
+                        if (i % 2 === 1) leg += 0.001;
+                    }
+                }
+
+                this.searchPattern = L.polyline(points, {
+                    color: '#ffaa00',
+                    weight: 2,
+                    dashArray: '10, 10',
+                    opacity: 0.8
+                }).addTo(this.map);
+            },
+
+            fitBounds(points) {
+                if (points && points.length > 0) {
+                    const bounds = L.latLngBounds(points);
+                    this.map.fitBounds(bounds, { padding: [50, 50] });
+                }
+            }
+        };
+
+        // ==========================================
+        // MODULE 4: TELEMETRY SIMULATION SYSTEM
+        // ==========================================
+        const TelemetrySystem = {
+            vessel: null,
+            crew: [],
+            alerts: [],
+            isRunning: false,
+            simulationInterval: null,
+            speedMultiplier: 1,
+            audioContext: null,
+            dataPoints: 0,
+
+            // Maritime physics constants
+            PHYSICS: {
+                DRIFT_FACTOR: 0.02,        // nm per hour per knot
+                LEEWAY_COEFF: 0.03,        // degrees per knot of wind
+                SEARCH_SPEED: 8,           // knots (SAR vessel speed)
+                HEART_RATE_BASE: 72,
+                HEART_RATE_STRESS: 140,
+                BODY_TEMP_NORMAL: 37.0,
+                BODY_TEMP_DROP: 0.5        // degrees per hour in water
+            },
+
+            init() {
+                this.initAudio();
+                this.initializeScenario();
+                this.startSimulation();
+                this.updateUI();
+                
+                // Update UTC clock
+                setInterval(() => {
+                    document.getElementById('utc-time').textContent = new Date().toISOString().split('T')[1].split('.')[0];
+                }, 1000);
+            },
+
+            initAudio() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch(e) {
+                    console.warn('Audio context not supported');
+                }
+            },
+
+            initializeScenario() {
+                // Initialize vessel in English Channel (busy shipping lane)
+                this.vessel = {
+                    name: "M/V GUARDIAN",
+                    type: "Container Ship",
+                    imo: "9876543",
+                    position: { lat: 48.8566, lon: -2.3522 },
+                    heading: 245, // SW direction
+                    speed: 18.5,  // knots
+                    draft: 12.5,
+                    destination: "New York"
+                };
+
+                // Initialize 4 crew members with realistic profiles
+                this.crew = [
+                    {
+                        id: 'C001',
+                        name: 'John Smith',
+                        role: 'Chief Officer',
+                        age: 34,
+                        weight: 85, // kg
+                        height: 180, // cm
+                        swimmingAbility: 'excellent',
+                        clothing: 'immersion_suit',
+                        deviceBattery: 98,
+                        position: { lat: 48.8566, lon: -2.3522 },
+                        status: 'safe',
+                        biometrics: {
+                            heartRate: 72,
+                            bodyTemp: 37.0,
+                            oxygenSat: 98
+                        },
+                        history: []
+                    },
+                    {
+                        id: 'C002',
+                        name: 'Maria Garcia',
+                        role: 'Second Engineer',
+                        age: 29,
+                        weight: 65,
+                        height: 165,
+                        swimmingAbility: 'good',
+                        clothing: 'work_uniform',
+                        deviceBattery: 87,
+                        position: { lat: 48.8570, lon: -2.3525 },
+                        status: 'safe',
+                        biometrics: {
+                            heartRate: 68,
+                            bodyTemp: 36.8,
+                            oxygenSat: 99
+                        },
+                        history: []
+                    },
+                    {
+                        id: 'C003',
+                        name: 'Chen Wei',
+                        role: 'Able Seaman',
+                        age: 42,
+                        weight: 75,
+                        height: 172,
+                        swimmingAbility: 'moderate',
+                        clothing: 'safety_vest',
+                        deviceBattery: 92,
+                        position: { lat: 48.8562, lon: -2.3518 },
+                        status: 'safe',
+                        biometrics: {
+                            heartRate: 75,
+                            bodyTemp: 37.1,
+                            oxygenSat: 97
+                        },
+                        history: []
+                    },
+                    {
+                        id: 'C004',
+                        name: 'Sarah Johnson',
+                        role: 'Deck Cadet',
+                        age: 23,
+                        weight: 60,
+                        height: 168,
+                        swimmingAbility: 'basic',
+                        clothing: 'regular_clothes',
+                        deviceBattery: 45, // Low battery - potential issue
+                        position: { lat: 48.8572, lon: -2.3515 },
+                        status: 'safe',
+                        biometrics: {
+                            heartRate: 80,
+                            bodyTemp: 37.0,
+                            oxygenSat: 98
+                        },
+                        history: []
+                    }
+                ];
+
+                // Environmental conditions (English Channel)
+                this.environment = {
+                    windSpeed: 15,      // knots
+                    windDirection: 315, // NW
+                    currentSpeed: 2.3,  // knots
+                    currentDirection: 240, // SW
+                    waveHeight: 2.1,    // meters
+                    waterTemp: 12.5,    // Celsius
+                    visibility: 8       // nautical miles
+                };
+
+                this.updateMapMarkers();
+            },
+
+            startSimulation() {
+                this.isRunning = true;
+                this.simulationInterval = setInterval(() => {
+                    this.simulationStep();
+                }, 1000 / this.speedMultiplier);
+            },
+
+            simulationStep() {
+                // Update vessel position (realistic movement)
+                this.updateVesselPosition();
+                
+                // Update crew positions (drift if in water)
+                this.updateCrewPositions();
+                
+                // Update biometrics
+                this.updateBiometrics();
+                
+                // Check for alerts
+                this.checkAlerts();
+                
+                // Update UI
+                this.updateUI();
+                
+                this.dataPoints++;
+            },
+
+            updateVesselPosition() {
+                // Convert speed to degrees per second
+                // 1 knot = 1/3600 nm/h = approx 1/60 deg/hour at equator
+                const speedDegPerSec = (this.vessel.speed / 3600) / 60;
+                const headingRad = (this.vessel.heading * Math.PI) / 180;
+                
+                // Update position
+                const dLat = speedDegPerSec * Math.cos(headingRad) * this.speedMultiplier;
+                const dLon = (speedDegPerSec * Math.sin(headingRad)) / Math.cos(this.vessel.position.lat * Math.PI / 180) * this.speedMultiplier;
+                
+                this.vessel.position.lat += dLat;
+                this.vessel.position.lon += dLon;
+                
+                // Slight heading variation for realism
+                this.vessel.heading += (Math.random() - 0.5) * 0.1;
+                
+                // Update map
+                MapManager.updateVesselPosition(
+                    this.vessel.position.lat, 
+                    this.vessel.position.lon, 
+                    this.vessel.heading
+                );
+                
+                // Update coordinate display
+                document.getElementById('vessel-coords').textContent = 
+                    `Vessel: ${this.formatCoords(this.vessel.position.lat, this.vessel.position.lon)}`;
+            },
+
+            updateCrewPositions() {
+                this.crew.forEach(member => {
+                    if (member.status === 'mob') {
+                        // Realistic drift calculation for person in water
+                        const drift = this.calculateDrift(member);
+                        member.position.lat += drift.dLat;
+                        member.position.lon += drift.dLon;
+                        
+                        // Update device battery (draining faster due to cold)
+                        member.deviceBattery -= 0.01 * this.speedMultiplier;
+                        
+                        // Record history for track
+                        member.history.push({
+                            ...member.position,
+                            time: Date.now(),
+                            temp: member.biometrics.bodyTemp
+                        });
+                        
+                        // Limit history
+                        if (member.history.length > 100) member.history.shift();
+                    } else if (member.status === 'safe') {
+                        // Crew on deck - slight movement relative to vessel
+                        member.position.lat = this.vessel.position.lat + (Math.random() - 0.5) * 0.0001;
+                        member.position.lon = this.vessel.position.lon + (Math.random() - 0.5) * 0.0001;
+                    }
+                    
+                    MapManager.addCrewMarker(member.id, member.position.lat, member.position.lon, member.status);
+                });
+            },
+
+            calculateDrift(person) {
+                // Maritime drift model combining current, wind (leeway), and swimmer capability
+                
+                const windRad = (this.environment.windDirection * Math.PI) / 180;
+                const currentRad = (this.environment.currentDirection * Math.PI) / 180;
+                
+                // 1. Current drift (primary factor)
+                const currentSpeedDeg = (this.environment.currentSpeed / 3600) / 60; // deg/sec
+                const currentLat = currentSpeedDeg * Math.cos(currentRad) * this.speedMultiplier;
+                const currentLon = (currentSpeedDeg * Math.sin(currentRad) / Math.cos(person.position.lat * Math.PI / 180)) * this.speedMultiplier;
+                
+                // 2. Wind leeway (person acts like small sail)
+                // Leeway speed ~2-4% of wind speed depending on clothing/body
+                let leewayFactor = 0.03; // 3% of wind speed
+                if (person.clothing === 'immersion_suit') leewayFactor = 0.05; // More windage
+                else if (person.clothing === 'regular_clothes') leewayFactor = 0.04;
+                
+                const leewaySpeed = (this.environment.windSpeed * leewayFactor / 3600) / 60;
+                // Leeway direction is downwind (same as wind)
+                const leewayLat = leewaySpeed * Math.cos(windRad) * this.speedMultiplier;
+                const leewayLon = (leewaySpeed * Math.sin(windRad) / Math.cos(person.position.lat * Math.PI / 180)) * this.speedMultiplier;
+                
+                // 3. Swimming capability (if conscious and swimming)
+                let swimLat = 0, swimLon = 0;
+                if (person.biometrics.bodyTemp > 35 && person.swimmingAbility !== 'none') {
+                    const swimSpeed = person.swimmingAbility === 'excellent' ? 0.5 : 
+                                     person.swimmingAbility === 'good' ? 0.3 : 0.1; // knots
+                    const swimSpeedDeg = (swimSpeed / 3600) / 60;
+                    // Assume swimming with current to conserve energy
+                    swimLat = swimSpeedDeg * Math.cos(currentRad) * this.speedMultiplier * 0.5;
+                    swimLon = (swimSpeedDeg * Math.sin(currentRad) / Math.cos(person.position.lat * Math.PI / 180)) * this.speedMultiplier * 0.5;
+                }
+                
+                return {
+                    dLat: currentLat + leewayLat + swimLat,
+                    dLon: currentLon + leewayLon + swimLon,
+                    totalSpeed: Math.sqrt(Math.pow(currentLat + leewayLat, 2) + Math.pow(currentLon + leewayLon, 2)) * 3600 * 60 // knots
+                };
+            },
+
+            updateBiometrics() {
+                this.crew.forEach(member => {
+                    if (member.status === 'mob') {
+                        // Cold water immersion effects
+                        const timeInWater = (Date.now() - member.mobTime) / 1000; // seconds
+                        const hoursInWater = timeInWater / 3600;
+                        
+                        // Hypothermia progression
+                        // Water temp 12.5°C: survival time ~1-6 hours depending on clothing
+                        let insulationFactor = 1.0;
+                        if (member.clothing === 'immersion_suit') insulationFactor = 0.3;
+                        else if (member.clothing === 'safety_vest') insulationFactor = 0.8;
+                        else if (member.clothing === 'work_uniform') insulationFactor = 0.9;
+                        
+                        const tempDrop = this.PHYSICS.BODY_TEMP_DROP * hoursInWater * insulationFactor;
+                        member.biometrics.bodyTemp = Math.max(30, this.PHYSICS.BODY_TEMP_NORMAL - tempDrop);
+                        
+                        // Heart rate increases then drops dangerously
+                        if (hoursInWater < 0.5) {
+                            // Cold shock response
+                            member.biometrics.heartRate = Math.min(160, this.PHYSICS.HEART_RATE_STRESS + Math.random() * 20);
+                        } else if (hoursInWater < 2) {
+                            // Struggle to stay afloat
+                            member.biometrics.heartRate = 130 + Math.random() * 15;
+                        } else {
+                            // Hypothermia - bradycardia
+                            member.biometrics.heartRate = Math.max(50, 100 - (hoursInWater * 10));
+                        }
+                        
+                        // Consciousness check
+                        if (member.biometrics.bodyTemp < 33) {
+                            member.conscious = false;
+                            member.swimmingAbility = 'none';
+                        }
+                    }
+                });
+            },
+
+            checkAlerts() {
+                this.crew.forEach(member => {
+                    // Low battery warning
+                    if (member.deviceBattery < 20 && member.status !== 'low_battery_alert') {
+                        this.triggerAlert('warning', `Low battery on ${member.name}'s device`, member);
+                    }
+                    
+                    // MOB already handled separately
+                    if (member.status === 'mob') {
+                        // Check for critical hypothermia
+                        if (member.biometrics.bodyTemp < 32 && !member.hypothermiaAlert) {
+                            this.triggerAlert('critical', `Severe hypothermia: ${member.name} (${member.biometrics.bodyTemp.toFixed(1)}°C)`, member);
+                            member.hypothermiaAlert = true;
+                        }
+                    }
+                });
+            },
+
+            triggerAlert(severity, message, crewMember = null) {
+                const alert = {
+                    id: Date.now(),
+                    severity,
+                    message,
+                    crewMember,
+                    timestamp: new Date(),
+                    acknowledged: false
+                };
+                
+                this.alerts.push(alert);
+                
+                // Keep only last 50 alerts
+                if (this.alerts.length > 50) this.alerts.shift();
+                
+                // Sound alert
+                if (severity === 'critical' || severity === 'mob') {
+                    this.playAlertSound();
+                }
+                
+                // Update UI
+                this.updateAlertLog();
+                this.updateStats();
+                
+                // Show modal for MOB
+                if (severity === 'mob') {
+                    this.showMOBModal(alert);
+                }
+            },
+
+            playAlertSound() {
+                if (!this.audioContext) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                // Maritime distress tone: 1300Hz +/- 50Hz
+                oscillator.frequency.setValueAtTime(1300, this.audioContext.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(1350, this.audioContext.currentTime + 0.5);
+                oscillator.frequency.linearRampToValueAtTime(1300, this.audioContext.currentTime + 1.0);
+                
+                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 1);
+            },
+
+            simulateMOB() {
+                // Randomly select a crew member
+                const victim = this.crew[Math.floor(Math.random() * this.crew.length)];
+                
+                victim.status = 'mob';
+                victim.mobTime = Date.now();
+                victim.position = { 
+                    lat: this.vessel.position.lat + (Math.random() - 0.5) * 0.001,
+                    lon: this.vessel.position.lon + (Math.random() - 0.5) * 0.001
+                };
+                
+                // Immediate physiological response
+                victim.biometrics.heartRate = 160; // Panic
+                victim.conscious = true;
+                victim.hypothermiaAlert = false;
+                
+                this.triggerAlert('mob', `MAN OVERBOARD: ${victim.name}`, victim);
+                
+                // Update map to show MOB location
+                MapManager.map.setView([victim.position.lat, victim.position.lon], 15);
+            },
+
+            showMOBModal(alert) {
+                const modal = document.getElementById('mob-modal');
+                const details = document.getElementById('mob-details');
+                
+                const victim = alert.crewMember;
+                const drift = this.calculateDrift(victim);
+                
+                details.innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: #ff8888;">CREW:</strong> ${victim.name} (${victim.role})
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: #ff8888;">LAST POSITION:</strong><br>
+                        ${this.formatCoords(victim.position.lat, victim.position.lon)}
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: #ff8888;">DRIFT:</strong> ${(drift.totalSpeed * 3600).toFixed(1)} knots 
+                        toward ${this.getCardinalDirection(this.environment.currentDirection)}
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: #ff8888;">VITALS:</strong><br>
+                        HR: ${Math.round(victim.biometrics.heartRate)} bpm<br>
+                        Temp: ${victim.biometrics.bodyTemp.toFixed(1)}°C<br>
+                        SpO2: ${victim.biometrics.oxygenSat}%
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: #ff8888;">EST. SURVIVAL:</strong> 
+                        ${this.calculateSurvivalTime(victim)} minutes
+                    </div>
+                `;
+                
+                modal.style.display = 'flex';
+            },
+
+            acknowledgeMOB() {
+                document.getElementById('mob-modal').style.display = 'none';
+                const mobAlert = this.alerts.find(a => a.severity === 'mob' && !a.acknowledged);
+                if (mobAlert) {
+                    mobAlert.acknowledged = true;
+                    this.updateAlertLog();
+                }
+            },
+
+            initiateSearchPattern() {
+                const mob = this.crew.find(c => c.status === 'mob');
+                if (mob) {
+                    MapManager.drawSearchPattern(mob.position, 'expanding_square');
+                    this.triggerAlert('info', `SAR pattern initiated for ${mob.name}`);
+                }
+                document.getElementById('mob-modal').style.display = 'none';
+            },
+
+            calculateSurvivalTime(person) {
+                // Cold water survival estimation
+                const waterTemp = this.environment.waterTemp;
+                let baseTime = 0;
+                
+                if (waterTemp >= 15) baseTime = 360; // 6+ hours
+                else if (waterTemp >= 10) baseTime = 180; // 3 hours
+                else if (waterTemp >= 5) baseTime = 90; // 1.5 hours
+                else baseTime = 45; // 45 minutes
+                
+                // Adjust for clothing
+                if (person.clothing === 'immersion_suit') baseTime *= 3;
+                else if (person.clothing === 'safety_vest') baseTime *= 1.2;
+                
+                // Adjust for body temp
+                const elapsed = (this.PHYSICS.BODY_TEMP_NORMAL - person.biometrics.bodyTemp) / this.PHYSICS.BODY_TEMP_DROP;
+                const remaining = baseTime - (elapsed * 60);
+                
+                return Math.max(0, Math.round(remaining));
+            },
+
+            formatCoords(lat, lon) {
+                const latDir = lat >= 0 ? 'N' : 'S';
+                const lonDir = lon >= 0 ? 'E' : 'W';
+                const latDeg = Math.abs(lat);
+                const lonDeg = Math.abs(lon);
+                return `${latDir} ${latDeg.toFixed(4)}° ${lonDir} ${lonDeg.toFixed(4)}°`;
+            },
+
+            getCardinalDirection(degrees) {
+                const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+                return directions[Math.round(degrees / 22.5) % 16];
+            },
+
+            updateUI() {
+                // Update stats
+                document.getElementById('stat-records').textContent = this.dataPoints.toLocaleString();
+                
+                const counts = {
+                    safe: this.crew.filter(c => c.status === 'safe').length,
+                    warning: this.crew.filter(c => c.status === 'warning').length,
+                    alert: this.crew.filter(c => c.status === 'alert').length,
+                    mob: this.crew.filter(c => c.status === 'mob').length
+                };
+                
+                document.getElementById('count-safe').textContent = counts.safe;
+                document.getElementById('count-warning').textContent = counts.warning;
+                document.getElementById('count-alert').textContent = counts.alert;
+                document.getElementById('count-mob').textContent = counts.mob;
+                
+                // Update alert badge
+                const activeAlerts = this.alerts.filter(a => !a.acknowledged).length;
+                const criticalAlerts = this.alerts.filter(a => a.severity === 'critical' && !a.acknowledged).length;
+                
+                document.getElementById('alert-count').textContent = activeAlerts;
+                document.getElementById('critical-count').textContent = criticalAlerts;
+                document.getElementById('alert-badge').style.display = activeAlerts > 0 ? 'flex' : 'none';
+                document.getElementById('stat-alerts').textContent = activeAlerts;
+            },
+
+            updateAlertLog() {
+                const container = document.getElementById('alert-log');
+                container.innerHTML = '';
+                
+                [...this.alerts].reverse().forEach(alert => {
+                    const entry = document.createElement('div');
+                    entry.className = `log-entry ${alert.severity === 'critical' || alert.severity === 'mob' ? 'critical' : ''}`;
+                    entry.innerHTML = `
+                        <div class="log-time">${alert.timestamp.toLocaleTimeString()} - ${alert.severity.toUpperCase()}</div>
+                        <div>${alert.message}</div>
+                    `;
+                    container.appendChild(entry);
+                });
+            },
+
+            updateMapMarkers() {
+                this.crew.forEach(member => {
+                    MapManager.addCrewMarker(member.id, member.position.lat, member.position.lon, member.status);
+                });
+            },
+
+            setSimulationSpeed(speed) {
+                this.speedMultiplier = parseInt(speed);
+                document.getElementById('speed-display').textContent = speed + 'x';
+                
+                // Restart interval with new speed
+                clearInterval(this.simulationInterval);
+                this.simulationInterval = setInterval(() => {
+                    this.simulationStep();
+                }, 1000 / this.speedMultiplier);
+            },
+
+            showActiveAlerts() {
+                // Scroll to alert log
+                document.querySelector('.control-panel').scrollTop = document.querySelector('.alert-log').offsetTop;
+            }
+        };
+
+        // ==========================================
+        // Initialization
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            SettingsManager.init();
+            AuthManager.init();
+            MapManager.init();
+        });
+
+        // Handle map marker rotation (custom plugin for Leaflet)
+        L.Marker.include({
+            setRotationAngle: function(angle) {
+                this.options.rotationAngle = angle;
+                if (this._icon) {
+                    this._icon.style.transform = this._icon.style.transform.replace(/rotate\([^)]+\)/, '') + ` rotate(${angle}deg)`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
