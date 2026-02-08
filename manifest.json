@@ -1,0 +1,9 @@
+{
+    "name": "MOB Guard - Maritime Security",
+    "short_name": "MOB Guard",
+    "description": "Man Overboard Detection and SAR System",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0a1628",
+    "theme_color": "#00d4ff"
+}
