@@ -3,1635 +3,2795 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MOB Guard - Maritime Security System</title>
-    
-    <!-- External Libraries (CDN for GitHub Pages) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>MOB Guard - Man Overboard Security System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <style>
-        :root {
-            --marine-dark: #0a1628;
-            --marine-darker: #070f1a;
-            --marine-accent: #00d4ff;
-            --alert-red: #ff3333;
-            --warning-yellow: #ffaa00;
-            --safe-green: #00ff88;
-            --text-primary: #e0f7ff;
-            --text-secondary: #8b9cb5;
-            --border-color: #1e3a5f;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--marine-dark);
-            color: var(--text-primary);
-            overflow: hidden;
-            height: 100vh;
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a1f2e;
+            --bg-input: #243447;
+            --accent-cyan: #06b6d4;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-orange: #f97316;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --border-color: #2d3748;
         }
 
-        /* Login Screen */
-        #login-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, var(--marine-darker) 0%, #001a33 100%);
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        /* Login Page */
+        .login-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 10000;
-            transition: opacity 0.5s;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #0f172a 100%);
         }
 
-        .login-container {
-            background: rgba(14, 30, 50, 0.95);
-            padding: 3rem;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 20px 60px rgba(0, 212, 255, 0.1);
-            width: 90%;
-            max-width: 450px;
-            backdrop-filter: blur(10px);
-        }
-
-        .login-header {
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px 30px;
             text-align: center;
-            margin-bottom: 2rem;
         }
 
-        .login-header i {
-            font-size: 3rem;
-            color: var(--marine-accent);
-            margin-bottom: 1rem;
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 36px;
+            color: white;
+            box-shadow: 0 10px 40px rgba(6, 182, 212, 0.3);
+        }
+
+        .login-box h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .login-box p {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
             display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .input-wrapper {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            transition: all 0.3s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+        }
+
+        .input-wrapper i {
+            color: var(--text-secondary);
+            margin-right: 12px;
+            font-size: 16px;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 0;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 15px;
+            outline: none;
+        }
+
+        .input-wrapper input::placeholder {
+            color: #4b5563;
+        }
+
+        .toggle-password {
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .demo-credentials {
+            margin-top: 25px;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .demo-credentials h3 {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .credentials-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            font-size: 13px;
+        }
+
+        .credential-item {
+            text-align: left;
+        }
+
+        .credential-item span {
+            color: var(--text-secondary);
+        }
+
+        .credential-item strong {
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+
+        /* Main App */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .app-container.active {
+            display: block;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .page-title h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .page-title p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            50% { opacity: 0.5; }
         }
 
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 0.8rem;
-            background: rgba(0, 212, 255, 0.05);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--marine-accent);
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 1rem;
-            background: linear-gradient(135deg, var(--marine-accent), #0099cc);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
-        }
-
-        .credentials-hint {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        /* Main Dashboard */
-        #dashboard {
-            display: none;
-            height: 100vh;
-            grid-template-columns: 280px 1fr 320px;
-            grid-template-rows: 60px 1fr;
-            gap: 1px;
-            background: var(--marine-darker);
-        }
-
-        /* Header */
-        .header {
-            grid-column: 1 / -1;
-            background: rgba(10, 22, 40, 0.95);
-            border-bottom: 1px solid var(--border-color);
+        /* Emergency Alert Banner */
+        .emergency-banner {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-orange));
+            padding: 15px 20px;
+            z-index: 999;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 2rem;
-            backdrop-filter: blur(10px);
+            animation: slideDown 0.5s ease;
         }
 
-        .logo {
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        .emergency-content {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: var(--marine-accent);
+            gap: 12px;
         }
 
-        .logo i {
-            font-size: 1.8rem;
-        }
-
-        .header-controls {
+        .emergency-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
             display: flex;
-            gap: 1.5rem;
             align-items: center;
-        }
-
-        .alert-badge {
-            background: var(--alert-red);
-            color: white;
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-weight: bold;
+            justify-content: center;
+            font-size: 20px;
             animation: blink 1s infinite;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
         }
 
         @keyframes blink {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+            50% { opacity: 0.7; }
         }
 
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            cursor: pointer;
-            padding: 0.5rem 1rem;
+        .emergency-text h3 {
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .emergency-text p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .emergency-time {
+            text-align: right;
+        }
+
+        .emergency-time .time {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .emergency-time .ampm {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .close-emergency {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
             border-radius: 8px;
-            transition: background 0.3s;
-        }
-
-        .user-menu:hover {
-            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            margin-left: 15px;
         }
 
         /* Sidebar */
         .sidebar {
-            background: rgba(10, 22, 40, 0.9);
-            padding: 1.5rem;
-            overflow-y: auto;
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            z-index: 1001;
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
             border-right: 1px solid var(--border-color);
         }
 
-        .stat-card {
-            background: rgba(0, 212, 255, 0.05);
-            border: 1px solid var(--border-color);
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-logo .logo-small {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
             border-radius: 12px;
-            padding: 1.2rem;
-            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .sidebar-logo div h3 {
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .sidebar-logo div p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .close-sidebar {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-sidebar:hover {
+            background: var(--bg-card);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: 20px;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-left: 12px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+        }
+
+        .nav-item:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.1), transparent);
+            color: var(--accent-cyan);
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        .nav-item i {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-item span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .user-info div h4 {
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .user-info div p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 80px 20px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .main-content.with-emergency {
+            padding-top: 160px;
+        }
+
+        /* Stats Grid - Responsive */
+        .stats-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             transition: transform 0.2s;
         }
 
         .stat-card:hover {
-            transform: translateX(5px);
-            border-color: var(--marine-accent);
+            transform: translateY(-2px);
         }
 
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
+        .stat-info h3 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-info p {
+            font-size: 13px;
             color: var(--text-secondary);
-            font-size: 0.9rem;
         }
 
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--marine-accent);
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
         }
 
-        .status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.8rem;
-            margin-top: 1.5rem;
+        .stat-icon.blue {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
         }
 
-        .status-item {
-            text-align: center;
-            padding: 1rem;
+        .stat-icon.red {
+            background: linear-gradient(135deg, var(--accent-red), #dc2626);
+        }
+
+        .stat-icon.gray {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+
+        .stat-icon.cyan {
+            background: linear-gradient(135deg, #0891b2, var(--accent-cyan));
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            margin-top: 25px;
+        }
+
+        .section-header h3 {
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-header h3 i {
+            color: var(--accent-cyan);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .status-safe { border-left: 3px solid var(--safe-green); }
-        .status-warning { border-left: 3px solid var(--warning-yellow); }
-        .status-alert { border-left: 3px solid var(--alert-red); }
+        .btn-small:hover {
+            background: var(--border-color);
+        }
 
-        .status-number {
-            font-size: 1.5rem;
-            font-weight: bold;
+        /* Tables */
+        .data-table {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr;
+            padding: 15px;
+            background: var(--bg-secondary);
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+            min-width: 600px;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+            align-items: center;
+            min-width: 600px;
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        .device-name {
+            font-weight: 600;
+        }
+
+        .device-name span {
             display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-top: 2px;
         }
 
-        /* Map Container */
+        .position {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .signal-bars {
+            display: flex;
+            gap: 3px;
+            align-items: flex-end;
+            height: 20px;
+        }
+
+        .signal-bar {
+            width: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
+        .signal-bar.active {
+            background: var(--accent-green);
+        }
+
+        .signal-bar.warning {
+            background: var(--accent-orange);
+        }
+
+        .signal-bar.danger {
+            background: var(--accent-red);
+        }
+
+        .signal-bar:nth-child(1) { height: 30%; }
+        .signal-bar:nth-child(2) { height: 50%; }
+        .signal-bar:nth-child(3) { height: 70%; }
+        .signal-bar:nth-child(4) { height: 90%; }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .status-badge.online {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        .status-badge.offline {
+            background: rgba(107, 114, 128, 0.2);
+            color: #6b7280;
+        }
+
+        .status-badge.alert {
+            background: rgba(249, 115, 22, 0.2);
+            color: var(--accent-orange);
+        }
+
+        .status-badge.critical {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+        }
+
+        .status-badge.safe {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        /* Alert Cards */
+        .alert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .alert-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-left: 4px solid var(--accent-red);
+        }
+
+        .alert-card.warning {
+            border-left-color: var(--accent-orange);
+        }
+
+        .alert-card.info {
+            border-left-color: #f59e0b;
+        }
+
+        .alert-icon {
+            width: 45px;
+            height: 45px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--accent-red);
+            flex-shrink: 0;
+        }
+
+        .alert-card.warning .alert-icon {
+            background: rgba(249, 115, 22, 0.1);
+            color: var(--accent-orange);
+        }
+
+        .alert-card.info .alert-icon {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-content h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .alert-badge {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+            text-transform: uppercase;
+        }
+
+        .alert-badge.warning {
+            background: rgba(249, 115, 22, 0.2);
+            color: var(--accent-orange);
+        }
+
+        .alert-badge.info {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .alert-content p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .alert-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .alert-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-resolve {
+            padding: 8px 16px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 8px;
+            color: var(--accent-green);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-resolve:hover {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        /* Map Container - COLORFUL STYLES */
         .map-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            height: 400px;
             position: relative;
-            background: #001122;
         }
 
         #map {
-            width: 100%;
             height: 100%;
-            z-index: 1;
-        }
-
-        .map-overlay {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            z-index: 1000;
-            background: rgba(10, 22, 40, 0.9);
-            padding: 1rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            backdrop-filter: blur(10px);
-        }
-
-        .coordinate-display {
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            color: var(--marine-accent);
-            margin-bottom: 0.5rem;
-        }
-
-        /* Control Panel */
-        .control-panel {
-            background: rgba(10, 22, 40, 0.9);
-            padding: 1.5rem;
-            overflow-y: auto;
-            border-left: 1px solid var(--border-color);
-        }
-
-        .panel-section {
-            margin-bottom: 2rem;
-        }
-
-        .panel-title {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .control-group {
-            margin-bottom: 1.2rem;
-        }
-
-        .control-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        select, input[type="range"], input[type="number"] {
             width: 100%;
-            padding: 0.6rem;
-            background: rgba(0, 212, 255, 0.05);
-            border: 1px solid var(--border-color);
+            background: #e5e7eb; /* Light gray while loading */
+        }
+
+        /* Map Switcher Control */
+        .map-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .map-btn {
+            padding: 8px 16px;
+            border: 2px solid transparent;
             border-radius: 6px;
-            color: var(--text-primary);
-        }
-
-        input[type="range"] {
-            padding: 0;
-            height: 6px;
-            -webkit-appearance: none;
-            background: var(--border-color);
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            background: var(--marine-accent);
-            border-radius: 50%;
+            background: white;
+            color: #374151;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
-        }
-
-        .toggle-switch {
+            transition: all 0.2s;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
+            gap: 6px;
         }
 
-        .switch {
-            position: relative;
+        .map-btn:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
+        .map-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .map-filters {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 400;
+        }
+
+        .filter-dropdown {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 15px;
+            color: #374151;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .map-stats {
+            position: absolute;
+            top: 65px;
+            left: 15px;
+            display: flex;
+            gap: 8px;
+            z-index: 400;
+            flex-wrap: wrap;
+        }
+
+        .map-stat {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .map-stat.safe {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+        }
+
+        .map-stat.warning {
+            background: rgba(245, 158, 11, 0.9);
+            color: white;
+        }
+
+        .map-stat.alert {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+
+        .map-stat.mob {
+            background: linear-gradient(90deg, #dc2626, #f97316);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        /* Leaflet Popup Customization for colorful map */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .leaflet-popup-content {
+            margin: 0;
+            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #1f2937;
+        }
+
+        .leaflet-container a.leaflet-popup-close-button {
+            color: #6b7280;
+            padding: 8px 8px 0 0;
+        }
+
+        /* Device Cards */
+        .device-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .device-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .device-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .device-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .device-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .device-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(6, 182, 212, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--accent-cyan);
+        }
+
+        .device-title.offline .device-icon {
+            background: rgba(107, 114, 128, 0.1);
+            color: #6b7280;
+        }
+
+        .device-title div h4 {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .device-title div p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .device-toggle {
             width: 50px;
             height: 26px;
-            background: var(--border-color);
+            background: var(--accent-cyan);
             border-radius: 13px;
+            position: relative;
             cursor: pointer;
             transition: background 0.3s;
         }
 
-        .switch.active {
-            background: var(--marine-accent);
-        }
-
-        .switch-thumb {
+        .device-toggle::after {
+            content: '';
             position: absolute;
-            top: 3px;
-            left: 3px;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             background: white;
             border-radius: 50%;
-            transition: transform 0.3s;
+            top: 2px;
+            right: 2px;
+            transition: transform 0.2s;
         }
 
-        .switch.active .switch-thumb {
-            transform: translateX(24px);
+        .device-toggle.off {
+            background: var(--border-color);
         }
 
-        .alert-log {
-            max-height: 300px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            padding: 1rem;
+        .device-toggle.off::after {
+            transform: translateX(-24px);
         }
 
-        .log-entry {
-            padding: 0.8rem;
-            margin-bottom: 0.5rem;
-            border-left: 3px solid var(--marine-accent);
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 0 8px 8px 0;
-            font-size: 0.85rem;
-        }
-
-        .log-entry.critical {
-            border-left-color: var(--alert-red);
-            background: rgba(255, 51, 51, 0.1);
-        }
-
-        .log-time {
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            margin-bottom: 0.3rem;
-        }
-
-        /* MOB Alert Modal */
-        .mob-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 10001;
-            justify-content: center;
-            align-items: center;
-            animation: fadeIn 0.3s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .mob-content {
-            background: linear-gradient(135deg, #1a0a0a 0%, #2a1515 100%);
-            border: 2px solid var(--alert-red);
-            border-radius: 16px;
-            padding: 3rem;
-            max-width: 600px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 0 50px rgba(255, 51, 51, 0.5);
-            animation: pulse-red 2s infinite;
-        }
-
-        @keyframes pulse-red {
-            0%, 100% { box-shadow: 0 0 50px rgba(255, 51, 51, 0.5); }
-            50% { box-shadow: 0 0 80px rgba(255, 51, 51, 0.8); }
-        }
-
-        .mob-icon {
-            font-size: 4rem;
-            color: var(--alert-red);
-            margin-bottom: 1rem;
-            animation: bounce 1s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .mob-title {
-            font-size: 2.5rem;
-            color: var(--alert-red);
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .mob-details {
-            margin: 2rem 0;
-            text-align: left;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 1.5rem;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .mob-actions {
+        .device-actions {
             display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
+            gap: 10px;
         }
 
-        .btn-emergency {
-            flex: 1;
-            padding: 1rem;
-            background: var(--alert-red);
-            border: none;
+        .device-actions button {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            color: white;
-            font-weight: bold;
+            color: var(--text-secondary);
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .device-actions button:hover {
+            color: var(--text-primary);
+        }
+
+        .signal-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .device-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .detail-item {
+            text-align: center;
+        }
+
+        .detail-item label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .detail-item value {
+            font-size: 14px;
+            font-weight: 500;
+            font-family: monospace;
+        }
+
+        /* User Management */
+        .user-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .user-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .user-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .user-info-card {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar-large {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .user-info-card div h4 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .user-info-card div p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .role-badge.admin {
+            background: rgba(6, 182, 212, 0.2);
+            color: var(--accent-cyan);
+        }
+
+        .role-badge.viewer {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+        }
+
+        /* Settings Page - Enhanced */
+        .settings-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .settings-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .settings-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .settings-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .settings-header i {
+            font-size: 24px;
+            color: var(--accent-cyan);
+        }
+
+        .settings-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .settings-header p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-info h4 {
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .toggle-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .save-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* History Page */
+        .filters-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .filters-panel h3 {
+            font-size: 14px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-row {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .filter-row {
+                grid-template-columns: 2fr 1fr 1fr;
+            }
+        }
+
+        .filter-input {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 15px;
+            color: var(--text-primary);
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .export-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-green);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        @media (min-width: 768px) {
+            .export-btn {
+                width: auto;
+            }
+        }
+
+        /* Page Sections */
+        .page-section {
+            display: none;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        /* Desktop Layout Improvements */
+        @media (min-width: 1024px) {
+            .main-content {
+                padding: 80px 40px 40px;
+            }
+            
+            .header {
+                padding: 0 40px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 15px 25px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 2000;
+            opacity: 0;
             transition: all 0.3s;
         }
 
-        .btn-emergency:hover {
-            background: #ff5555;
-            transform: scale(1.05);
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
         }
 
-        .btn-secondary {
-            flex: 1;
-            padding: 1rem;
-            background: transparent;
+        .toast.success {
+            border-color: var(--accent-green);
+        }
+
+        .toast.error {
+            border-color: var(--accent-red);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal h3 {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
             cursor: pointer;
+            font-size: 14px;
         }
 
-        /* Responsive */
-        @media (max-width: 1024px) {
-            #dashboard {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto 1fr auto;
-            }
-            
-            .sidebar, .control-panel {
-                display: none; /* Simplified for mobile - can add toggle */
-            }
+        .btn-cancel {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
-        /* Custom Leaflet Markers */
-        .vessel-marker {
-            background: var(--marine-accent);
-            border: 3px solid white;
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+        .btn-confirm {
+            background: var(--accent-red);
+            color: white;
         }
 
-        .crew-marker {
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        /* Custom Select Dropdown */
+        .custom-select {
+            position: relative;
         }
 
-        .mob-marker {
-            background: var(--alert-red);
-            border: 3px solid white;
-            border-radius: 50%;
-            animation: mob-pulse 1s infinite;
-            box-shadow: 0 0 20px rgba(255, 51, 51, 0.8);
+        .select-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            margin-top: 5px;
+            z-index: 100;
+            display: none;
+            overflow: hidden;
         }
 
-        @keyframes mob-pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.3); }
+        .custom-select.active .select-options {
+            display: block;
         }
 
-        .search-pattern-line {
-            stroke: var(--warning-yellow);
-            stroke-width: 2;
-            stroke-dasharray: 10, 10;
-            opacity: 0.8;
+        .select-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .select-option:hover {
+            background: var(--bg-secondary);
+        }
+
+        .select-option.selected {
+            color: var(--accent-cyan);
+        }
+
+        .select-option.selected::after {
+            content: '✓';
+            float: right;
         }
     </style>
 </head>
 <body>
-
-    <!-- Login Screen -->
-    <div id="login-screen">
-        <div class="login-container">
-            <div class="login-header">
-                <i class="fas fa-anchor"></i>
-                <h1>MOB Guard</h1>
-                <p>Maritime Security & Safety System</p>
+    <!-- Login Page -->
+    <div class="login-container" id="loginPage">
+        <div class="login-box">
+            <div class="logo">
+                <i class="fas fa-broadcast-tower"></i>
             </div>
+            <h1>MOB Guard</h1>
+            <p>Man Overboard Security System</p>
             
-            <form id="login-form">
+            <form id="loginForm">
                 <div class="input-group">
                     <label>Username</label>
-                    <input type="text" id="username" placeholder="Enter username" required>
+                    <div class="input-wrapper">
+                        <i class="far fa-user"></i>
+                        <input type="text" id="username" placeholder="Enter username" required>
+                    </div>
                 </div>
                 
                 <div class="input-group">
                     <label>Password</label>
-                    <input type="password" id="password" placeholder="Enter password" required>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" placeholder="Enter password" required>
+                        <i class="far fa-eye toggle-password" onclick="togglePassword()"></i>
+                    </div>
                 </div>
                 
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-sign-in-alt"></i> Access System
+                <button type="submit" class="btn-primary" id="loginBtn">
+                    Sign In
                 </button>
             </form>
             
-            <div class="credentials-hint">
-                <strong>Demo Credentials:</strong><br>
-                Admin: <code>admin</code> / <code>admin123</code><br>
-                Viewer: <code>viewer</code> / <code>viewer123</code>
+            <div class="demo-credentials">
+                <h3>Demo Credentials</h3>
+                <div class="credentials-grid">
+                    <div class="credential-item">
+                        <span>Admin:</span><br>
+                        <strong>admin</strong> / <strong>admin123</strong>
+                    </div>
+                    <div class="credential-item">
+                        <span>Viewer:</span><br>
+                        <strong>viewer</strong> / <strong>viewer123</strong>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- MOB Emergency Modal -->
-    <div id="mob-modal" class="mob-modal">
-        <div class="mob-content">
-            <i class="fas fa-life-ring mob-icon"></i>
-            <h2 class="mob-title">MAN OVERBOARD!</h2>
-            <p style="color: #ff8888; margin-bottom: 1rem;">Immediate Action Required</p>
-            
-            <div class="mob-details" id="mob-details">
-                <!-- Dynamic content -->
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        <!-- Emergency Banner -->
+        <div class="emergency-banner" id="emergencyBanner">
+            <div class="emergency-content">
+                <div class="emergency-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="emergency-text">
+                    <h3>MAN OVERBOARD</h3>
+                    <p>Device MOB-002 at 25.7592, -80.1934</p>
+                </div>
             </div>
-            
-            <div class="mob-actions">
-                <button class="btn-emergency" onclick="TelemetrySystem.acknowledgeMOB()">
-                    <i class="fas fa-check"></i> Acknowledge Alert
-                </button>
-                <button class="btn-secondary" onclick="TelemetrySystem.initiateSearchPattern()">
-                    <i class="fas fa-search-location"></i> Start SAR Pattern
+            <div style="display: flex; align-items: center;">
+                <div class="emergency-time">
+                    <div class="time" id="emergencyTime">7:10:35</div>
+                    <div class="ampm">AM</div>
+                </div>
+                <button class="close-emergency" onclick="closeEmergency()">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
         </div>
-    </div>
 
-    <!-- Main Dashboard -->
-    <div id="dashboard">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
-                <i class="fas fa-ship"></i>
-                <span>MOB Guard</span>
-            </div>
-            
-            <div class="header-controls">
-                <div class="alert-badge" id="alert-badge" style="display: none;" onclick="TelemetrySystem.showActiveAlerts()">
-                    <i class="fas fa-bell"></i>
-                    <span id="alert-count">0</span> ALERTS
+            <div class="header-left">
+                <button class="menu-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="page-title">
+                    <h2 id="pageTitle">Dashboard</h2>
+                    <p id="pageSubtitle">Real-time vessel monitoring overview</p>
                 </div>
-                
-                <div class="user-menu" onclick="AuthManager.logout()">
-                    <i class="fas fa-user-circle" style="font-size: 1.5rem; color: var(--marine-accent);"></i>
-                    <span id="current-user">Admin</span>
-                    <i class="fas fa-chevron-down" style="font-size: 0.8rem;"></i>
+            </div>
+            <div class="header-right">
+                <div class="live-indicator">
+                    <span class="live-dot"></span>
+                    <span>Live Updates</span>
                 </div>
             </div>
         </header>
 
-        <!-- Left Sidebar: Stats -->
-        <aside class="sidebar">
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span>Active Alerts</span>
-                    <i class="fas fa-exclamation-triangle" style="color: var(--alert-red);"></i>
+        <!-- Sidebar -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="logo-small">
+                        <i class="fas fa-broadcast-tower"></i>
+                    </div>
+                    <div>
+                        <h3>MOB Guard</h3>
+                        <p>Security System</p>
+                    </div>
                 </div>
-                <div class="stat-value" id="stat-alerts">0</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                    <span id="critical-count" style="color: var(--alert-red); font-weight: bold;">0</span> Critical
-                </div>
+                <button class="close-sidebar" onclick="toggleSidebar()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span>Total Records</span>
-                    <i class="fas fa-database" style="color: var(--marine-accent);"></i>
-                </div>
-                <div class="stat-value" id="stat-records">0</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                    Telemetry entries
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span>Crew Members</span>
-                    <i class="fas fa-users" style="color: var(--safe-green);"></i>
-                </div>
-                <div class="stat-value" id="stat-crew">4</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                    Assigned devices
-                </div>
-            </div>
-
-            <div class="status-grid">
-                <div class="status-item status-safe">
-                    <span class="status-number" id="count-safe" style="color: var(--safe-green);">0</span>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Safe</span>
-                </div>
-                <div class="status-item status-warning">
-                    <span class="status-number" id="count-warning" style="color: var(--warning-yellow);">0</span>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Warning</span>
-                </div>
-                <div class="status-item status-alert">
-                    <span class="status-number" id="count-alert" style="color: var(--alert-red);">0</span>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Alert</span>
-                </div>
-                <div class="status-item" style="border-left: 3px solid #ff00ff;">
-                    <span class="status-number" id="count-mob" style="color: #ff00ff;">0</span>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">MOB</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Center: Map -->
-        <main class="map-container">
-            <div id="map"></div>
             
-            <div class="map-overlay">
-                <div class="coordinate-display" id="vessel-coords">
-                    Vessel: N 00° 00.000' E 000° 00.000'
-                </div>
-                <div class="coordinate-display" id="environment-data">
-                    Wind: 15kt NW | Current: 2.3kt 240°
-                </div>
-                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
-                    <i class="fas fa-clock"></i> UTC: <span id="utc-time">--:--:--</span>
-                </div>
-            </div>
-        </main>
-
-        <!-- Right Panel: Controls -->
-        <aside class="control-panel">
-            <div class="panel-section">
-                <div class="panel-title">
-                    <i class="fas fa-layer-group"></i> Map Configuration
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-item active" onclick="navigateTo('dashboard')">
+                        <i class="fas fa-th-large"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" onclick="navigateTo('livemap')">
+                        <i class="fas fa-map"></i>
+                        <span>Live Map</span>
+                    </div>
+                    <div class="nav-item" onclick="navigateTo('history')">
+                        <i class="fas fa-history"></i>
+                        <span>History</span>
+                    </div>
+                    <div class="nav-item" onclick="navigateTo('alerts')">
+                        <i class="far fa-bell"></i>
+                        <span>Alerts</span>
+                    </div>
+                    <div class="nav-item" onclick="navigateTo('devices')">
+                        <i class="fas fa-broadcast-tower"></i>
+                        <span>Devices</span>
+                    </div>
+                    <!-- NEW: Realistic Simulation Link -->
+                    <div class="nav-item" onclick="window.location.href='simulation.html'">
+                        <i class="fas fa-wave-square"></i>
+                        <span>Realistic Sim</span>
+                    </div>
                 </div>
                 
-                <div class="control-group">
-                    <label class="control-label">Chart Type</label>
-                    <select id="map-theme" onchange="MapManager.changeTheme(this.value)">
-                        <option value="dark">Dark (Marine)</option>
-                        <option value="satellite">Satellite</option>
-                        <option value="nautical">Nautical Charts</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label class="control-label">Simulation Speed</label>
-                    <input type="range" id="sim-speed" min="1" max="10" value="1" onchange="TelemetrySystem.setSimulationSpeed(this.value)">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.3rem;">
-                        <span>1x</span>
-                        <span id="speed-display">1x</span>
-                        <span>10x</span>
+                <div class="nav-section">
+                    <div class="nav-section-title">Admin</div>
+                    <div class="nav-item" onclick="navigateTo('users')">
+                        <i class="far fa-user"></i>
+                        <span>Users</span>
+                    </div>
+                    <div class="nav-item" onclick="navigateTo('settings')">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
                     </div>
                 </div>
-            </div>
-
-            <div class="panel-section">
-                <div class="panel-title">
-                    <i class="fas fa-sliders-h"></i> System Settings
-                </div>
-                
-                <div class="toggle-switch">
-                    <span>Auto Refresh</span>
-                    <div class="switch active" onclick="SettingsManager.toggle('autoRefresh', this)">
-                        <div class="switch-thumb"></div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <h4 id="currentUser">admin</h4>
+                        <p>ADMIN</p>
                     </div>
                 </div>
-
-                <div class="toggle-switch">
-                    <span>Push Notifications</span>
-                    <div class="switch" onclick="SettingsManager.toggle('pushNotifications', this)">
-                        <div class="switch-thumb"></div>
-                    </div>
-                </div>
-
-                <div class="control-group" style="margin-top: 1rem;">
-                    <label class="control-label">Data Retention (days)</label>
-                    <input type="number" id="retention-days" value="30" min="1" max="365" onchange="SettingsManager.setRetention(this.value)">
-                </div>
-            </div>
-
-            <div class="panel-section">
-                <div class="panel-title">
-                    <i class="fas fa-history"></i> Recent Alerts
-                </div>
-                <div class="alert-log" id="alert-log">
-                    <!-- Dynamic entries -->
-                </div>
-            </div>
-
-            <div class="panel-section" style="margin-top: auto;">
-                <button class="btn-primary" onclick="TelemetrySystem.simulateMOB()" style="background: linear-gradient(135deg, #ff3333, #cc0000);">
-                    <i class="fas fa-exclamation-circle"></i> Simulate MOB Event
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
                 </button>
             </div>
         </aside>
+
+        <!-- Main Content -->
+        <main class="main-content with-emergency" id="mainContent">
+            <!-- Dashboard Page -->
+            <div class="page-section active" id="dashboardPage">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>4</h3>
+                            <p>Total Devices<br><span style="color: var(--accent-green);">3 online</span></p>
+                        </div>
+                        <div class="stat-icon blue">
+                            <i class="fas fa-broadcast-tower"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 style="color: var(--accent-red);">3</h3>
+                            <p>Active Alerts<br><span style="color: var(--accent-red);">1 critical</span></p>
+                        </div>
+                        <div class="stat-icon red">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>15,243</h3>
+                            <p>Total Records<br>Telemetry entries</p>
+                        </div>
+                        <div class="stat-icon gray">
+                            <i class="fas fa-wave-square"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>4</h3>
+                            <p>Crew Members<br>Assigned devices</p>
+                        </div>
+                        <div class="stat-icon cyan">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h3><i class="fas fa-map-marker-alt"></i> Latest Positions</h3>
+                    <button class="btn-small" onclick="navigateTo('livemap')">View Map</button>
+                </div>
+
+                <div class="data-table">
+                    <div class="table-header">
+                        <div>Device</div>
+                        <div>Position</div>
+                        <div>Signal</div>
+                        <div>Status</div>
+                        <div>Time</div>
+                    </div>
+                    <div id="positionsTable">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Active Alerts</h3>
+                </div>
+
+                <div class="alert-list" id="dashboardAlerts">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Live Map Page -->
+            <div class="page-section" id="livemapPage">
+                <div class="map-container">
+                    <!-- Map Switcher Controls -->
+                    <div class="map-controls">
+                        <button class="map-btn active" onclick="switchMapLayer('satellite')" id="btn-satellite">
+                            <i class="fas fa-satellite"></i> Satellite
+                        </button>
+                        <button class="map-btn" onclick="switchMapLayer('standard')" id="btn-standard">
+                            <i class="fas fa-map"></i> Standard
+                        </button>
+                        <button class="map-btn" onclick="switchMapLayer('dark')" id="btn-dark">
+                            <i class="fas fa-moon"></i> Dark
+                        </button>
+                    </div>
+                    
+                    <div class="map-filters">
+                        <div class="filter-dropdown">
+                            <i class="fas fa-filter"></i>
+                            <span>All Devices</span>
+                            <i class="fas fa-chevron-down" style="margin-left: auto;"></i>
+                        </div>
+                        <div class="filter-dropdown" style="margin-left: auto;">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="map-stats">
+                        <span class="map-stat safe">Safe: 1</span>
+                        <span class="map-stat alert">Alert: 2</span>
+                        <span class="map-stat mob">MAN OVERBOARD: 1</span>
+                    </div>
+                    
+                    <div id="map"></div>
+                </div>
+
+                <div class="section-header">
+                    <h3><i class="fas fa-list"></i> Device Locations</h3>
+                </div>
+
+                <div class="device-grid" id="mapDeviceList">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- History Page -->
+            <div class="page-section" id="historyPage">
+                <div class="filters-panel">
+                    <h3><i class="fas fa-filter"></i> Filters</h3>
+                    <div class="filter-row">
+                        <input type="text" class="filter-input" placeholder="Search records...">
+                        <select class="filter-input">
+                            <option>All Devices</option>
+                            <option>MOB-001</option>
+                            <option>MOB-002</option>
+                            <option>MOB-003</option>
+                            <option>MOB-004</option>
+                        </select>
+                        <select class="filter-input">
+                            <option>All Statuses</option>
+                            <option>Safe</option>
+                            <option>Alert</option>
+                            <option>Critical</option>
+                        </select>
+                    </div>
+                    <button class="export-btn" style="margin-top: 10px;">
+                        <i class="fas fa-download"></i>
+                        Export CSV
+                    </button>
+                </div>
+
+                <div class="data-table">
+                    <div class="table-header" style="grid-template-columns: 0.8fr 1.2fr 1fr 0.8fr 1fr 1.2fr;">
+                        <div>Device</div>
+                        <div>Timestamp</div>
+                        <div>Position</div>
+                        <div>Signal</div>
+                        <div>Status</div>
+                        <div>Details</div>
+                    </div>
+                    <div id="historyTable">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts Page -->
+            <div class="page-section" id="alertsPage">
+                <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>3</h3>
+                            <p>Total</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 style="color: #f59e0b;">3</h3>
+                            <p>Active</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 style="color: var(--accent-green);">0</h3>
+                            <p>Resolved</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 style="color: var(--accent-red);">1</h3>
+                            <p>Critical</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="export-btn" style="margin-bottom: 20px;">
+                    <i class="fas fa-check-double"></i>
+                    Resolve All
+                </button>
+
+                <div class="filters-panel" style="margin-bottom: 20px;">
+                    <h3><i class="fas fa-filter"></i> Filters</h3>
+                    <div class="filter-row">
+                        <select class="filter-input">
+                            <option>All Severities</option>
+                            <option>Critical</option>
+                            <option>High</option>
+                            <option>Medium</option>
+                        </select>
+                        <select class="filter-input">
+                            <option>Active Only</option>
+                            <option>Resolved</option>
+                            <option>All</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="alert-list" id="alertsList">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Devices Page -->
+            <div class="page-section" id="devicesPage">
+                <button class="btn-primary" style="margin-bottom: 20px;">
+                    <i class="fas fa-plus"></i> Add Device
+                </button>
+
+                <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>4</h3>
+                            <p>Total Devices</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 style="color: var(--accent-green);">3</h3>
+                            <p>Online</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 style="color: var(--accent-cyan);">4</h3>
+                            <p>Active</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 style="color: #6b7280;">1</h3>
+                            <p>Offline</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="device-grid" id="devicesList">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Users Page -->
+            <div class="page-section" id="usersPage">
+                <button class="btn-primary" style="margin-bottom: 20px;">
+                    <i class="fas fa-plus"></i> Add User
+                </button>
+
+                <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>2</h3>
+                            <p>Total Users</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 style="color: var(--accent-cyan);">1</h3>
+                            <p>Admins</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 style="color: #6b7280;">1</h3>
+                            <p>Viewers</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-grid" id="usersList">
+                    <div class="user-card">
+                        <div class="user-info-card">
+                            <div class="user-avatar-large" style="color: var(--accent-cyan);">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <h4>admin</h4>
+                                <p>admin@mob.local</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span class="role-badge admin">Admin</span>
+                            <button class="btn-small" style="border: none; background: transparent; color: var(--text-secondary);" onclick="deleteUser('admin')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="user-card">
+                        <div class="user-info-card">
+                            <div class="user-avatar-large" style="color: #6b7280;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <h4>viewer</h4>
+                                <p>viewer@mob.local</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span class="role-badge viewer">Viewer</span>
+                            <button class="btn-small" style="border: none; background: transparent; color: var(--text-secondary);" onclick="deleteUser('viewer')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page - Enhanced -->
+            <div class="page-section" id="settingsPage">
+                <div class="settings-grid">
+                    <!-- Map Settings -->
+                    <div class="settings-card">
+                        <div class="settings-header">
+                            <i class="fas fa-map"></i>
+                            <div>
+                                <h3>Map Settings</h3>
+                                <p>Configure map display</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Default Map Theme</label>
+                            <div class="custom-select" onclick="this.classList.toggle('active')">
+                                <input type="text" class="filter-input" value="Satellite (Realistic)" readonly style="cursor: pointer;">
+                                <div class="select-options">
+                                    <div class="select-option" onclick="selectOption(this, 'Satellite (Realistic)')">Satellite (Realistic)</div>
+                                    <div class="select-option selected" onclick="selectOption(this, 'Standard (Colorful)')">Standard (Colorful)</div>
+                                    <div class="select-option" onclick="selectOption(this, 'Dark (Marine)')">Dark (Marine)</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Auto Refresh (seconds)</label>
+                            <input type="number" value="10" min="5" max="60">
+                        </div>
+                    </div>
+
+                    <!-- Data Management -->
+                    <div class="settings-card">
+                        <div class="settings-header">
+                            <i class="fas fa-database" style="color: #3b82f6;"></i>
+                            <div>
+                                <h3>Data Management</h3>
+                                <p>Configure data retention</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Data Retention (days)</label>
+                            <input type="number" value="30" min="7" max="365">
+                            <small>Telemetry data older than this will be deleted</small>
+                        </div>
+                    </div>
+
+                    <!-- Security -->
+                    <div class="settings-card full-width">
+                        <div class="settings-header">
+                            <i class="fas fa-shield-alt" style="color: var(--accent-red);"></i>
+                            <div>
+                                <h3>Security</h3>
+                                <p>Security settings</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Session Timeout (minutes)</label>
+                            <input type="number" value="30" min="5" max="120">
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <div class="toggle-info">
+                                <h4>Two-Factor Auth</h4>
+                                <p>Require 2FA for admin users</p>
+                            </div>
+                            <div class="device-toggle off" onclick="this.classList.toggle('off')"></div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div class="settings-card full-width">
+                        <div class="settings-header">
+                            <i class="fas fa-bell" style="color: var(--accent-orange);"></i>
+                            <div>
+                                <h3>Notifications</h3>
+                                <p>Alert and notification preferences</p>
+                            </div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <div class="toggle-info">
+                                <h4>Push Notifications</h4>
+                                <p>Receive push alerts on your device</p>
+                            </div>
+                            <div class="device-toggle" onclick="this.classList.toggle('off')"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <div class="toggle-info">
+                                <h4>Email Alerts</h4>
+                                <p>Send alerts to registered email</p>
+                            </div>
+                            <div class="device-toggle" onclick="this.classList.toggle('off')"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <div class="toggle-info">
+                                <h4>SMS Alerts</h4>
+                                <p>Send critical alerts via SMS</p>
+                            </div>
+                            <div class="device-toggle off" onclick="this.classList.toggle('off')"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-btn" onclick="saveSettings()">
+                    <i class="fas fa-save"></i>
+                    Save Settings
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Operation successful</span>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <h3><i class="fas fa-exclamation-triangle" style="color: var(--accent-red); margin-right: 10px;"></i>Confirm Delete</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Are you sure you want to delete this user? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-confirm" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // ==========================================
-        // MODULE 1: Authentication System
-        // ==========================================
-        const AuthManager = {
-            users: [
-                { username: 'admin', password: 'admin123', role: 'admin', name: 'Captain Admin' },
-                { username: 'viewer', password: 'viewer123', role: 'viewer', name: 'Deck Officer' }
-            ],
+        // Data
+        const devices = [
+            { id: 'MOB-001', name: 'Captain Smith', role: 'Captain', lat: 25.76934, lng: -80.17591, signal: -110.14, status: 'online', lastSeen: '7:11:50 AM' },
+            { id: 'MOB-002', name: 'John Doe', role: 'Deck Hand', lat: 25.75043, lng: -80.18594, signal: -110.16, status: 'online', lastSeen: '6:56:44 AM', alert: true },
+            { id: 'MOB-003', name: 'Jane Wilson', role: 'Deck Hand', lat: 25.76066, lng: -80.17218, signal: -113.33, status: 'offline', lastSeen: '6:55:44 AM' },
+            { id: 'MOB-004', name: 'Mike Johnson', role: 'Engineer', lat: 25.75581, lng: -80.17028, signal: -74.16, status: 'online', lastSeen: '6:54:44 AM' }
+        ];
+
+        const alerts = [
+            { id: 1, type: 'MAN OVERBOARD', device: 'MOB-002', severity: 'Critical', time: '7:10:35 AM', message: 'Device MOB-002 at 25.7592, -80.1934', icon: 'fa-user-slash' },
+            { id: 2, type: 'RSSI LOW', device: 'MOB-003', severity: 'High', time: '7:12:48 AM', message: 'Critical signal strength (-115 dBm) for device MOB-003', icon: 'fa-signal' },
+            { id: 3, type: 'GPS LOST', device: 'MOB-001', severity: 'Medium', time: '7:11:48 AM', message: 'GPS fix lost for device MOB-001', icon: 'fa-satellite-dish' }
+        ];
+
+        let currentUser = null;
+        let map = null;
+        let currentLayer = 'satellite';
+        let deleteTarget = null;
+
+        // Layer definitions for colorful maps
+        const mapLayers = {
+            satellite: L.layerGroup([
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri',
+                    maxZoom: 19
+                }),
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OpenStreetMap &copy; CARTO',
+                    subdomains: 'abcd',
+                    maxZoom: 20
+                })
+            ]),
+            standard: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 19
+            }),
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            })
+        };
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
             
-            currentUser: null,
-            sessionTimeout: null,
-
-            init() {
-                // Check existing session
-                const session = sessionStorage.getItem('mob_session');
-                if (session) {
-                    const data = JSON.parse(session);
-                    if (data.exp > Date.now()) {
-                        this.currentUser = data;
-                        this.showDashboard();
-                        return;
-                    }
-                }
-                
-                document.getElementById('login-screen').style.display = 'flex';
-                
-                document.getElementById('login-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.login();
-                });
-            },
-
-            login() {
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                
-                const user = this.users.find(u => u.username === username && u.password === password);
-                
-                if (user) {
-                    this.currentUser = user;
-                    const sessionData = {
-                        ...user,
-                        exp: Date.now() + (SettingsManager.get('sessionTimeout', 30) * 60000)
-                    };
-                    sessionStorage.setItem('mob_session', JSON.stringify(sessionData));
-                    
-                    // Clear password
-                    document.getElementById('password').value = '';
-                    
-                    this.showDashboard();
-                    TelemetrySystem.init();
+            const btn = document.getElementById('loginBtn');
+            btn.innerHTML = '<span class="loading"></span> Signing in...';
+            
+            setTimeout(() => {
+                if ((username === 'admin' && password === 'admin123') || 
+                    (username === 'viewer' && password === 'viewer123')) {
+                    currentUser = { username, role: username === 'admin' ? 'ADMIN' : 'VIEWER' };
+                    document.getElementById('currentUser').textContent = username;
+                    showApp();
+                    showToast('Welcome back, ' + username + '!', 'success');
                 } else {
-                    alert('Invalid credentials');
+                    btn.innerHTML = 'Sign In';
+                    showToast('Invalid credentials', 'error');
                 }
-            },
-
-            showDashboard() {
-                document.getElementById('login-screen').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('dashboard').style.display = 'grid';
-                }, 500);
-                
-                document.getElementById('current-user').textContent = this.currentUser.name;
-                
-                // Set session timeout
-                const timeout = SettingsManager.get('sessionTimeout', 30);
-                this.sessionTimeout = setTimeout(() => this.logout(), timeout * 60000);
-            },
-
-            logout() {
-                clearTimeout(this.sessionTimeout);
-                sessionStorage.removeItem('mob_session');
-                location.reload();
-            },
-
-            checkPermission(action) {
-                if (!this.currentUser) return false;
-                if (this.currentUser.role === 'admin') return true;
-                return ['view', 'acknowledge'].includes(action);
-            }
-        };
-
-        // ==========================================
-        // MODULE 2: Settings Management
-        // ==========================================
-        const SettingsManager = {
-            defaults: {
-                autoRefresh: true,
-                pushNotifications: false,
-                dataRetention: 30,
-                sessionTimeout: 30,
-                mapTheme: 'dark',
-                simulationSpeed: 1
-            },
-
-            init() {
-                // Load saved settings
-                Object.keys(this.defaults).forEach(key => {
-                    if (localStorage.getItem(`mob_${key}`) === null) {
-                        localStorage.setItem(`mob_${key}`, JSON.stringify(this.defaults[key]));
-                    }
-                });
-            },
-
-            get(key, defaultValue = null) {
-                const saved = localStorage.getItem(`mob_${key}`);
-                return saved ? JSON.parse(saved) : (defaultValue || this.defaults[key]);
-            },
-
-            set(key, value) {
-                localStorage.setItem(`mob_${key}`, JSON.stringify(value));
-            },
-
-            toggle(key, element) {
-                const current = this.get(key);
-                this.set(key, !current);
-                element.classList.toggle('active');
-            },
-
-            setRetention(days) {
-                this.set('dataRetention', parseInt(days));
-            }
-        };
-
-        // ==========================================
-        // MODULE 3: Map Management
-        // ==========================================
-        const MapManager = {
-            map: null,
-            layers: {},
-            markers: {},
-            tracks: {},
-            searchPattern: null,
-
-            init() {
-                // Initialize map centered on Atlantic shipping lane (demo)
-                this.map = L.map('map', {
-                    zoomControl: false,
-                    attributionControl: false
-                }).setView([48.8566, -2.3522], 13); // English Channel area
-
-                // Add zoom control to top right
-                L.control.zoom({ position: 'topright' }).addTo(this.map);
-
-                // Define layer sources
-                this.layers = {
-                    dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                        attribution: '&copy; CARTO',
-                        subdomains: 'abcd',
-                        maxZoom: 19
-                    }),
-                    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                        attribution: 'Esri'
-                    }),
-                    nautical: L.layerGroup([
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
-                        L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
-                            attribution: 'OpenSeaMap'
-                        })
-                    ])
-                };
-
-                this.layers.dark.addTo(this.map);
-                this.currentLayer = 'dark';
-
-                // Add vessel icon
-                const vesselIcon = L.divIcon({
-                    className: 'vessel-marker',
-                    html: '<i class="fas fa-ship" style="color: white; font-size: 16px; line-height: 30px; text-align: center; display: block;"></i>',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15]
-                });
-
-                this.markers.vessel = L.marker([48.8566, -2.3522], { icon: vesselIcon }).addTo(this.map);
-                this.markers.vessel.bindPopup('<b>M/V GUARDIAN</b><br>Type: Container Ship<br>IMO: 9876543');
-            },
-
-            changeTheme(theme) {
-                if (theme === this.currentLayer) return;
-                
-                this.map.removeLayer(this.layers[this.currentLayer]);
-                
-                if (theme === 'nautical') {
-                    this.layers.nautical.addTo(this.map);
-                } else {
-                    this.layers[theme].addTo(this.map);
-                }
-                
-                this.currentLayer = theme;
-                SettingsManager.set('mapTheme', theme);
-            },
-
-            updateVesselPosition(lat, lon, heading) {
-                this.markers.vessel.setLatLng([lat, lon]);
-                this.markers.vessel.setRotationAngle(heading);
-            },
-
-            addCrewMarker(crewId, lat, lon, status) {
-                const colors = {
-                    safe: '#00ff88',
-                    warning: '#ffaa00',
-                    alert: '#ff3333',
-                    mob: '#ff00ff'
-                };
-
-                const icon = L.divIcon({
-                    className: `crew-marker ${status === 'mob' ? 'mob-marker' : ''}`,
-                    html: `<div style="background: ${colors[status] || colors.safe}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px ${colors[status]};"></div>`,
-                    iconSize: [14, 14],
-                    iconAnchor: [7, 7]
-                });
-
-                if (this.markers[crewId]) {
-                    this.markers[crewId].setLatLng([lat, lon]);
-                    this.markers[crewId].setIcon(icon);
-                } else {
-                    this.markers[crewId] = L.marker([lat, lon], { icon }).addTo(this.map);
-                }
-                
-                return this.markers[crewId];
-            },
-
-            drawSearchPattern(center, pattern = 'expanding_square') {
-                if (this.searchPattern) {
-                    this.map.removeLayer(this.searchPattern);
-                }
-
-                const points = [];
-                const [lat, lon] = [center.lat, center.lon];
-                
-                if (pattern === 'expanding_square') {
-                    // Standard IAMSAR expanding square
-                    let leg = 0.001; // degrees
-                    let direction = 0;
-                    
-                    for (let i = 0; i < 20; i++) {
-                        const newLat = lat + (leg * Math.cos(direction * Math.PI/180));
-                        const newLon = lon + (leg * Math.sin(direction * Math.PI/180) / Math.cos(lat * Math.PI/180));
-                        points.push([newLat, newLon]);
-                        direction += Math.PI/2;
-                        if (i % 2 === 1) leg += 0.001;
-                    }
-                }
-
-                this.searchPattern = L.polyline(points, {
-                    color: '#ffaa00',
-                    weight: 2,
-                    dashArray: '10, 10',
-                    opacity: 0.8
-                }).addTo(this.map);
-            },
-
-            fitBounds(points) {
-                if (points && points.length > 0) {
-                    const bounds = L.latLngBounds(points);
-                    this.map.fitBounds(bounds, { padding: [50, 50] });
-                }
-            }
-        };
-
-        // ==========================================
-        // MODULE 4: TELEMETRY SIMULATION SYSTEM
-        // ==========================================
-        const TelemetrySystem = {
-            vessel: null,
-            crew: [],
-            alerts: [],
-            isRunning: false,
-            simulationInterval: null,
-            speedMultiplier: 1,
-            audioContext: null,
-            dataPoints: 0,
-
-            // Maritime physics constants
-            PHYSICS: {
-                DRIFT_FACTOR: 0.02,        // nm per hour per knot
-                LEEWAY_COEFF: 0.03,        // degrees per knot of wind
-                SEARCH_SPEED: 8,           // knots (SAR vessel speed)
-                HEART_RATE_BASE: 72,
-                HEART_RATE_STRESS: 140,
-                BODY_TEMP_NORMAL: 37.0,
-                BODY_TEMP_DROP: 0.5        // degrees per hour in water
-            },
-
-            init() {
-                this.initAudio();
-                this.initializeScenario();
-                this.startSimulation();
-                this.updateUI();
-                
-                // Update UTC clock
-                setInterval(() => {
-                    document.getElementById('utc-time').textContent = new Date().toISOString().split('T')[1].split('.')[0];
-                }, 1000);
-            },
-
-            initAudio() {
-                try {
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                } catch(e) {
-                    console.warn('Audio context not supported');
-                }
-            },
-
-            initializeScenario() {
-                // Initialize vessel in English Channel (busy shipping lane)
-                this.vessel = {
-                    name: "M/V GUARDIAN",
-                    type: "Container Ship",
-                    imo: "9876543",
-                    position: { lat: 48.8566, lon: -2.3522 },
-                    heading: 245, // SW direction
-                    speed: 18.5,  // knots
-                    draft: 12.5,
-                    destination: "New York"
-                };
-
-                // Initialize 4 crew members with realistic profiles
-                this.crew = [
-                    {
-                        id: 'C001',
-                        name: 'John Smith',
-                        role: 'Chief Officer',
-                        age: 34,
-                        weight: 85, // kg
-                        height: 180, // cm
-                        swimmingAbility: 'excellent',
-                        clothing: 'immersion_suit',
-                        deviceBattery: 98,
-                        position: { lat: 48.8566, lon: -2.3522 },
-                        status: 'safe',
-                        biometrics: {
-                            heartRate: 72,
-                            bodyTemp: 37.0,
-                            oxygenSat: 98
-                        },
-                        history: []
-                    },
-                    {
-                        id: 'C002',
-                        name: 'Maria Garcia',
-                        role: 'Second Engineer',
-                        age: 29,
-                        weight: 65,
-                        height: 165,
-                        swimmingAbility: 'good',
-                        clothing: 'work_uniform',
-                        deviceBattery: 87,
-                        position: { lat: 48.8570, lon: -2.3525 },
-                        status: 'safe',
-                        biometrics: {
-                            heartRate: 68,
-                            bodyTemp: 36.8,
-                            oxygenSat: 99
-                        },
-                        history: []
-                    },
-                    {
-                        id: 'C003',
-                        name: 'Chen Wei',
-                        role: 'Able Seaman',
-                        age: 42,
-                        weight: 75,
-                        height: 172,
-                        swimmingAbility: 'moderate',
-                        clothing: 'safety_vest',
-                        deviceBattery: 92,
-                        position: { lat: 48.8562, lon: -2.3518 },
-                        status: 'safe',
-                        biometrics: {
-                            heartRate: 75,
-                            bodyTemp: 37.1,
-                            oxygenSat: 97
-                        },
-                        history: []
-                    },
-                    {
-                        id: 'C004',
-                        name: 'Sarah Johnson',
-                        role: 'Deck Cadet',
-                        age: 23,
-                        weight: 60,
-                        height: 168,
-                        swimmingAbility: 'basic',
-                        clothing: 'regular_clothes',
-                        deviceBattery: 45, // Low battery - potential issue
-                        position: { lat: 48.8572, lon: -2.3515 },
-                        status: 'safe',
-                        biometrics: {
-                            heartRate: 80,
-                            bodyTemp: 37.0,
-                            oxygenSat: 98
-                        },
-                        history: []
-                    }
-                ];
-
-                // Environmental conditions (English Channel)
-                this.environment = {
-                    windSpeed: 15,      // knots
-                    windDirection: 315, // NW
-                    currentSpeed: 2.3,  // knots
-                    currentDirection: 240, // SW
-                    waveHeight: 2.1,    // meters
-                    waterTemp: 12.5,    // Celsius
-                    visibility: 8       // nautical miles
-                };
-
-                this.updateMapMarkers();
-            },
-
-            startSimulation() {
-                this.isRunning = true;
-                this.simulationInterval = setInterval(() => {
-                    this.simulationStep();
-                }, 1000 / this.speedMultiplier);
-            },
-
-            simulationStep() {
-                // Update vessel position (realistic movement)
-                this.updateVesselPosition();
-                
-                // Update crew positions (drift if in water)
-                this.updateCrewPositions();
-                
-                // Update biometrics
-                this.updateBiometrics();
-                
-                // Check for alerts
-                this.checkAlerts();
-                
-                // Update UI
-                this.updateUI();
-                
-                this.dataPoints++;
-            },
-
-            updateVesselPosition() {
-                // Convert speed to degrees per second
-                // 1 knot = 1/3600 nm/h = approx 1/60 deg/hour at equator
-                const speedDegPerSec = (this.vessel.speed / 3600) / 60;
-                const headingRad = (this.vessel.heading * Math.PI) / 180;
-                
-                // Update position
-                const dLat = speedDegPerSec * Math.cos(headingRad) * this.speedMultiplier;
-                const dLon = (speedDegPerSec * Math.sin(headingRad)) / Math.cos(this.vessel.position.lat * Math.PI / 180) * this.speedMultiplier;
-                
-                this.vessel.position.lat += dLat;
-                this.vessel.position.lon += dLon;
-                
-                // Slight heading variation for realism
-                this.vessel.heading += (Math.random() - 0.5) * 0.1;
-                
-                // Update map
-                MapManager.updateVesselPosition(
-                    this.vessel.position.lat, 
-                    this.vessel.position.lon, 
-                    this.vessel.heading
-                );
-                
-                // Update coordinate display
-                document.getElementById('vessel-coords').textContent = 
-                    `Vessel: ${this.formatCoords(this.vessel.position.lat, this.vessel.position.lon)}`;
-            },
-
-            updateCrewPositions() {
-                this.crew.forEach(member => {
-                    if (member.status === 'mob') {
-                        // Realistic drift calculation for person in water
-                        const drift = this.calculateDrift(member);
-                        member.position.lat += drift.dLat;
-                        member.position.lon += drift.dLon;
-                        
-                        // Update device battery (draining faster due to cold)
-                        member.deviceBattery -= 0.01 * this.speedMultiplier;
-                        
-                        // Record history for track
-                        member.history.push({
-                            ...member.position,
-                            time: Date.now(),
-                            temp: member.biometrics.bodyTemp
-                        });
-                        
-                        // Limit history
-                        if (member.history.length > 100) member.history.shift();
-                    } else if (member.status === 'safe') {
-                        // Crew on deck - slight movement relative to vessel
-                        member.position.lat = this.vessel.position.lat + (Math.random() - 0.5) * 0.0001;
-                        member.position.lon = this.vessel.position.lon + (Math.random() - 0.5) * 0.0001;
-                    }
-                    
-                    MapManager.addCrewMarker(member.id, member.position.lat, member.position.lon, member.status);
-                });
-            },
-
-            calculateDrift(person) {
-                // Maritime drift model combining current, wind (leeway), and swimmer capability
-                
-                const windRad = (this.environment.windDirection * Math.PI) / 180;
-                const currentRad = (this.environment.currentDirection * Math.PI) / 180;
-                
-                // 1. Current drift (primary factor)
-                const currentSpeedDeg = (this.environment.currentSpeed / 3600) / 60; // deg/sec
-                const currentLat = currentSpeedDeg * Math.cos(currentRad) * this.speedMultiplier;
-                const currentLon = (currentSpeedDeg * Math.sin(currentRad) / Math.cos(person.position.lat * Math.PI / 180)) * this.speedMultiplier;
-                
-                // 2. Wind leeway (person acts like small sail)
-                // Leeway speed ~2-4% of wind speed depending on clothing/body
-                let leewayFactor = 0.03; // 3% of wind speed
-                if (person.clothing === 'immersion_suit') leewayFactor = 0.05; // More windage
-                else if (person.clothing === 'regular_clothes') leewayFactor = 0.04;
-                
-                const leewaySpeed = (this.environment.windSpeed * leewayFactor / 3600) / 60;
-                // Leeway direction is downwind (same as wind)
-                const leewayLat = leewaySpeed * Math.cos(windRad) * this.speedMultiplier;
-                const leewayLon = (leewaySpeed * Math.sin(windRad) / Math.cos(person.position.lat * Math.PI / 180)) * this.speedMultiplier;
-                
-                // 3. Swimming capability (if conscious and swimming)
-                let swimLat = 0, swimLon = 0;
-                if (person.biometrics.bodyTemp > 35 && person.swimmingAbility !== 'none') {
-                    const swimSpeed = person.swimmingAbility === 'excellent' ? 0.5 : 
-                                     person.swimmingAbility === 'good' ? 0.3 : 0.1; // knots
-                    const swimSpeedDeg = (swimSpeed / 3600) / 60;
-                    // Assume swimming with current to conserve energy
-                    swimLat = swimSpeedDeg * Math.cos(currentRad) * this.speedMultiplier * 0.5;
-                    swimLon = (swimSpeedDeg * Math.sin(currentRad) / Math.cos(person.position.lat * Math.PI / 180)) * this.speedMultiplier * 0.5;
-                }
-                
-                return {
-                    dLat: currentLat + leewayLat + swimLat,
-                    dLon: currentLon + leewayLon + swimLon,
-                    totalSpeed: Math.sqrt(Math.pow(currentLat + leewayLat, 2) + Math.pow(currentLon + leewayLon, 2)) * 3600 * 60 // knots
-                };
-            },
-
-            updateBiometrics() {
-                this.crew.forEach(member => {
-                    if (member.status === 'mob') {
-                        // Cold water immersion effects
-                        const timeInWater = (Date.now() - member.mobTime) / 1000; // seconds
-                        const hoursInWater = timeInWater / 3600;
-                        
-                        // Hypothermia progression
-                        // Water temp 12.5°C: survival time ~1-6 hours depending on clothing
-                        let insulationFactor = 1.0;
-                        if (member.clothing === 'immersion_suit') insulationFactor = 0.3;
-                        else if (member.clothing === 'safety_vest') insulationFactor = 0.8;
-                        else if (member.clothing === 'work_uniform') insulationFactor = 0.9;
-                        
-                        const tempDrop = this.PHYSICS.BODY_TEMP_DROP * hoursInWater * insulationFactor;
-                        member.biometrics.bodyTemp = Math.max(30, this.PHYSICS.BODY_TEMP_NORMAL - tempDrop);
-                        
-                        // Heart rate increases then drops dangerously
-                        if (hoursInWater < 0.5) {
-                            // Cold shock response
-                            member.biometrics.heartRate = Math.min(160, this.PHYSICS.HEART_RATE_STRESS + Math.random() * 20);
-                        } else if (hoursInWater < 2) {
-                            // Struggle to stay afloat
-                            member.biometrics.heartRate = 130 + Math.random() * 15;
-                        } else {
-                            // Hypothermia - bradycardia
-                            member.biometrics.heartRate = Math.max(50, 100 - (hoursInWater * 10));
-                        }
-                        
-                        // Consciousness check
-                        if (member.biometrics.bodyTemp < 33) {
-                            member.conscious = false;
-                            member.swimmingAbility = 'none';
-                        }
-                    }
-                });
-            },
-
-            checkAlerts() {
-                this.crew.forEach(member => {
-                    // Low battery warning
-                    if (member.deviceBattery < 20 && member.status !== 'low_battery_alert') {
-                        this.triggerAlert('warning', `Low battery on ${member.name}'s device`, member);
-                    }
-                    
-                    // MOB already handled separately
-                    if (member.status === 'mob') {
-                        // Check for critical hypothermia
-                        if (member.biometrics.bodyTemp < 32 && !member.hypothermiaAlert) {
-                            this.triggerAlert('critical', `Severe hypothermia: ${member.name} (${member.biometrics.bodyTemp.toFixed(1)}°C)`, member);
-                            member.hypothermiaAlert = true;
-                        }
-                    }
-                });
-            },
-
-            triggerAlert(severity, message, crewMember = null) {
-                const alert = {
-                    id: Date.now(),
-                    severity,
-                    message,
-                    crewMember,
-                    timestamp: new Date(),
-                    acknowledged: false
-                };
-                
-                this.alerts.push(alert);
-                
-                // Keep only last 50 alerts
-                if (this.alerts.length > 50) this.alerts.shift();
-                
-                // Sound alert
-                if (severity === 'critical' || severity === 'mob') {
-                    this.playAlertSound();
-                }
-                
-                // Update UI
-                this.updateAlertLog();
-                this.updateStats();
-                
-                // Show modal for MOB
-                if (severity === 'mob') {
-                    this.showMOBModal(alert);
-                }
-            },
-
-            playAlertSound() {
-                if (!this.audioContext) return;
-                
-                const oscillator = this.audioContext.createOscillator();
-                const gainNode = this.audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(this.audioContext.destination);
-                
-                // Maritime distress tone: 1300Hz +/- 50Hz
-                oscillator.frequency.setValueAtTime(1300, this.audioContext.currentTime);
-                oscillator.frequency.linearRampToValueAtTime(1350, this.audioContext.currentTime + 0.5);
-                oscillator.frequency.linearRampToValueAtTime(1300, this.audioContext.currentTime + 1.0);
-                
-                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
-                
-                oscillator.start(this.audioContext.currentTime);
-                oscillator.stop(this.audioContext.currentTime + 1);
-            },
-
-            simulateMOB() {
-                // Randomly select a crew member
-                const victim = this.crew[Math.floor(Math.random() * this.crew.length)];
-                
-                victim.status = 'mob';
-                victim.mobTime = Date.now();
-                victim.position = { 
-                    lat: this.vessel.position.lat + (Math.random() - 0.5) * 0.001,
-                    lon: this.vessel.position.lon + (Math.random() - 0.5) * 0.001
-                };
-                
-                // Immediate physiological response
-                victim.biometrics.heartRate = 160; // Panic
-                victim.conscious = true;
-                victim.hypothermiaAlert = false;
-                
-                this.triggerAlert('mob', `MAN OVERBOARD: ${victim.name}`, victim);
-                
-                // Update map to show MOB location
-                MapManager.map.setView([victim.position.lat, victim.position.lon], 15);
-            },
-
-            showMOBModal(alert) {
-                const modal = document.getElementById('mob-modal');
-                const details = document.getElementById('mob-details');
-                
-                const victim = alert.crewMember;
-                const drift = this.calculateDrift(victim);
-                
-                details.innerHTML = `
-                    <div style="margin-bottom: 1rem;">
-                        <strong style="color: #ff8888;">CREW:</strong> ${victim.name} (${victim.role})
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <strong style="color: #ff8888;">LAST POSITION:</strong><br>
-                        ${this.formatCoords(victim.position.lat, victim.position.lon)}
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <strong style="color: #ff8888;">DRIFT:</strong> ${(drift.totalSpeed * 3600).toFixed(1)} knots 
-                        toward ${this.getCardinalDirection(this.environment.currentDirection)}
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <strong style="color: #ff8888;">VITALS:</strong><br>
-                        HR: ${Math.round(victim.biometrics.heartRate)} bpm<br>
-                        Temp: ${victim.biometrics.bodyTemp.toFixed(1)}°C<br>
-                        SpO2: ${victim.biometrics.oxygenSat}%
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <strong style="color: #ff8888;">EST. SURVIVAL:</strong> 
-                        ${this.calculateSurvivalTime(victim)} minutes
-                    </div>
-                `;
-                
-                modal.style.display = 'flex';
-            },
-
-            acknowledgeMOB() {
-                document.getElementById('mob-modal').style.display = 'none';
-                const mobAlert = this.alerts.find(a => a.severity === 'mob' && !a.acknowledged);
-                if (mobAlert) {
-                    mobAlert.acknowledged = true;
-                    this.updateAlertLog();
-                }
-            },
-
-            initiateSearchPattern() {
-                const mob = this.crew.find(c => c.status === 'mob');
-                if (mob) {
-                    MapManager.drawSearchPattern(mob.position, 'expanding_square');
-                    this.triggerAlert('info', `SAR pattern initiated for ${mob.name}`);
-                }
-                document.getElementById('mob-modal').style.display = 'none';
-            },
-
-            calculateSurvivalTime(person) {
-                // Cold water survival estimation
-                const waterTemp = this.environment.waterTemp;
-                let baseTime = 0;
-                
-                if (waterTemp >= 15) baseTime = 360; // 6+ hours
-                else if (waterTemp >= 10) baseTime = 180; // 3 hours
-                else if (waterTemp >= 5) baseTime = 90; // 1.5 hours
-                else baseTime = 45; // 45 minutes
-                
-                // Adjust for clothing
-                if (person.clothing === 'immersion_suit') baseTime *= 3;
-                else if (person.clothing === 'safety_vest') baseTime *= 1.2;
-                
-                // Adjust for body temp
-                const elapsed = (this.PHYSICS.BODY_TEMP_NORMAL - person.biometrics.bodyTemp) / this.PHYSICS.BODY_TEMP_DROP;
-                const remaining = baseTime - (elapsed * 60);
-                
-                return Math.max(0, Math.round(remaining));
-            },
-
-            formatCoords(lat, lon) {
-                const latDir = lat >= 0 ? 'N' : 'S';
-                const lonDir = lon >= 0 ? 'E' : 'W';
-                const latDeg = Math.abs(lat);
-                const lonDeg = Math.abs(lon);
-                return `${latDir} ${latDeg.toFixed(4)}° ${lonDir} ${lonDeg.toFixed(4)}°`;
-            },
-
-            getCardinalDirection(degrees) {
-                const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-                return directions[Math.round(degrees / 22.5) % 16];
-            },
-
-            updateUI() {
-                // Update stats
-                document.getElementById('stat-records').textContent = this.dataPoints.toLocaleString();
-                
-                const counts = {
-                    safe: this.crew.filter(c => c.status === 'safe').length,
-                    warning: this.crew.filter(c => c.status === 'warning').length,
-                    alert: this.crew.filter(c => c.status === 'alert').length,
-                    mob: this.crew.filter(c => c.status === 'mob').length
-                };
-                
-                document.getElementById('count-safe').textContent = counts.safe;
-                document.getElementById('count-warning').textContent = counts.warning;
-                document.getElementById('count-alert').textContent = counts.alert;
-                document.getElementById('count-mob').textContent = counts.mob;
-                
-                // Update alert badge
-                const activeAlerts = this.alerts.filter(a => !a.acknowledged).length;
-                const criticalAlerts = this.alerts.filter(a => a.severity === 'critical' && !a.acknowledged).length;
-                
-                document.getElementById('alert-count').textContent = activeAlerts;
-                document.getElementById('critical-count').textContent = criticalAlerts;
-                document.getElementById('alert-badge').style.display = activeAlerts > 0 ? 'flex' : 'none';
-                document.getElementById('stat-alerts').textContent = activeAlerts;
-            },
-
-            updateAlertLog() {
-                const container = document.getElementById('alert-log');
-                container.innerHTML = '';
-                
-                [...this.alerts].reverse().forEach(alert => {
-                    const entry = document.createElement('div');
-                    entry.className = `log-entry ${alert.severity === 'critical' || alert.severity === 'mob' ? 'critical' : ''}`;
-                    entry.innerHTML = `
-                        <div class="log-time">${alert.timestamp.toLocaleTimeString()} - ${alert.severity.toUpperCase()}</div>
-                        <div>${alert.message}</div>
-                    `;
-                    container.appendChild(entry);
-                });
-            },
-
-            updateMapMarkers() {
-                this.crew.forEach(member => {
-                    MapManager.addCrewMarker(member.id, member.position.lat, member.position.lon, member.status);
-                });
-            },
-
-            setSimulationSpeed(speed) {
-                this.speedMultiplier = parseInt(speed);
-                document.getElementById('speed-display').textContent = speed + 'x';
-                
-                // Restart interval with new speed
-                clearInterval(this.simulationInterval);
-                this.simulationInterval = setInterval(() => {
-                    this.simulationStep();
-                }, 1000 / this.speedMultiplier);
-            },
-
-            showActiveAlerts() {
-                // Scroll to alert log
-                document.querySelector('.control-panel').scrollTop = document.querySelector('.alert-log').offsetTop;
-            }
-        };
-
-        // ==========================================
-        // Initialization
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            SettingsManager.init();
-            AuthManager.init();
-            MapManager.init();
+            }, 1000);
         });
 
-        // Handle map marker rotation (custom plugin for Leaflet)
-        L.Marker.include({
-            setRotationAngle: function(angle) {
-                this.options.rotationAngle = angle;
-                if (this._icon) {
-                    this._icon.style.transform = this._icon.style.transform.replace(/rotate\([^)]+\)/, '') + ` rotate(${angle}deg)`;
+        function togglePassword() {
+            const input = document.getElementById('password');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function showApp() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('appContainer').classList.add('active');
+            initDashboard();
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        // Navigation
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        function navigateTo(page) {
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(page + 'Page').classList.add('active');
+            
+            const navItems = document.querySelectorAll('.nav-item');
+            const pageIndex = ['dashboard', 'livemap', 'history', 'alerts', 'devices', 'users', 'settings'].indexOf(page);
+            if (pageIndex >= 0) navItems[pageIndex].classList.add('active');
+            
+            const titles = {
+                dashboard: { title: 'Dashboard', subtitle: 'Real-time vessel monitoring overview' },
+                livemap: { title: 'Live Map', subtitle: 'Real-time vessel tracking and positioning' },
+                history: { title: 'History', subtitle: 'Telemetry records and event logs' },
+                alerts: { title: 'Alerts', subtitle: 'Manage and respond to security alerts' },
+                devices: { title: 'Devices', subtitle: 'Manage MOB tracking devices' },
+                users: { title: 'Users', subtitle: 'Manage system users and permissions' },
+                settings: { title: 'Settings', subtitle: 'System configuration and preferences' }
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[page].title;
+            document.getElementById('pageSubtitle').textContent = titles[page].subtitle;
+            
+            toggleSidebar();
+            
+            if (page === 'livemap') setTimeout(initMap, 100);
+            if (page === 'history') renderHistory();
+            if (page === 'alerts') renderAlerts();
+            if (page === 'devices') renderDevices();
+        }
+
+        function closeEmergency() {
+            document.getElementById('emergencyBanner').style.display = 'none';
+            document.getElementById('mainContent').classList.remove('with-emergency');
+        }
+
+        // Dashboard
+        function initDashboard() {
+            renderPositionsTable();
+            renderDashboardAlerts();
+        }
+
+        function renderPositionsTable() {
+            const container = document.getElementById('positionsTable');
+            const times = ['7:13:48 AM', '7:12:48 AM', '7:11:48 AM', '7:10:48 AM'];
+            const statuses = ['critical', 'alert', 'alert', 'safe'];
+            const statusTexts = ['MAN OVERBOARD', 'Alert', 'Alert', 'Safe'];
+            
+            container.innerHTML = devices.map((d, i) => `
+                <div class="table-row">
+                    <div class="device-name">
+                        ${d.id}
+                        <span>${d.name}</span>
+                    </div>
+                    <div class="position">${d.lat.toFixed(4)},<br>${d.lng.toFixed(4)}</div>
+                    <div>
+                        <div class="signal-bars">
+                            ${getSignalBars(d.signal)}
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">${d.signal.toFixed(1)} dBm</div>
+                    </div>
+                    <div>
+                        <span class="status-badge ${statuses[i]}">${statusTexts[i]}</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        <i class="far fa-clock" style="margin-right: 4px;"></i>${times[i]}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getSignalBars(signal) {
+            const strength = signal > -90 ? 4 : signal > -100 ? 3 : signal > -110 ? 2 : 1;
+            let bars = '';
+            const colorClass = strength >= 3 ? 'active' : strength === 2 ? 'warning' : 'danger';
+            for (let i = 1; i <= 4; i++) {
+                bars += `<div class="signal-bar ${i <= strength ? colorClass : ''}"></div>`;
+            }
+            return bars;
+        }
+
+        function renderDashboardAlerts() {
+            const container = document.getElementById('dashboardAlerts');
+            container.innerHTML = alerts.slice(0, 3).map(a => `
+                <div class="alert-card ${a.severity === 'High' ? 'warning' : a.severity === 'Medium' ? 'info' : ''}">
+                    <div class="alert-icon">
+                        <i class="fas ${a.icon}"></i>
+                    </div>
+                    <div class="alert-content">
+                        <h4>
+                            ${a.type}
+                            <span class="alert-badge ${a.severity === 'High' ? 'warning' : a.severity === 'Medium' ? 'info' : ''}">${a.severity}</span>
+                        </h4>
+                        <p>${a.message}</p>
+                        <div class="alert-meta">
+                            <span><i class="far fa-clock"></i> ${a.time}</span>
+                            <span><i class="fas fa-broadcast-tower"></i> ${a.device}</span>
+                        </div>
+                    </div>
+                    <button class="btn-resolve" onclick="resolveAlert(${a.id})">
+                        <i class="fas fa-check"></i> Resolve
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Map - COLORFUL REALISTIC VERSION
+        function initMap() {
+            if (map) {
+                map.invalidateSize();
+                return;
+            }
+            
+            // Initialize map
+            map = L.map('map', {
+                center: [25.77, -80.18],
+                zoom: 13,
+                zoomControl: false
+            });
+            
+            // Add zoom control to bottom right
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+            
+            // Add default layer (satellite)
+            mapLayers.satellite.addTo(map);
+            
+            // Add device markers
+            devices.forEach(d => {
+                const color = d.alert ? '#ef4444' : d.status === 'offline' ? '#6b7280' : '#10b981';
+                
+                // Main marker
+                const marker = L.circleMarker([d.lat, d.lng], {
+                    radius: d.alert ? 20 : 12,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 3,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                }).addTo(map);
+                
+                // Pulse effect for alerts
+                if (d.alert) {
+                    const pulse = L.circleMarker([d.lat, d.lng], {
+                        radius: 35,
+                        fillColor: color,
+                        color: color,
+                        weight: 0,
+                        fillOpacity: 0.4
+                    }).addTo(map);
+                    
+                    // Animate pulse
+                    let growing = true;
+                    setInterval(() => {
+                        const currentRadius = pulse.getRadius();
+                        if (growing) {
+                            pulse.setRadius(currentRadius + 2);
+                            if (currentRadius >= 45) growing = false;
+                        } else {
+                            pulse.setRadius(currentRadius - 2);
+                            if (currentRadius <= 35) growing = true;
+                        }
+                    }, 100);
                 }
+                
+                // Enhanced popup
+                marker.bindPopup(`
+                    <div style="min-width: 200px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+                        <div style="background: ${color}; color: white; padding: 10px; margin: -15px -15px 10px -15px; border-radius: 8px 8px 0 0; font-weight: 600;">
+                            ${d.id}
+                        </div>
+                        <div style="padding: 5px 0;">
+                            <strong style="color: #374151;">${d.name}</strong><br>
+                            <span style="color: #6b7280; font-size: 13px;">${d.role}</span>
+                        </div>
+                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #4b5563;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Status:</span>
+                                <span style="color: ${color}; font-weight: 600;">${d.alert ? 'MAN OVERBOARD' : d.status}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Signal:</span>
+                                <span>${d.signal} dBm</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Updated:</span>
+                                <span>${d.lastSeen}</span>
+                            </div>
+                        </div>
+                    </div>
+                `, {
+                    closeButton: true,
+                    className: 'custom-popup'
+                });
+            });
+            
+            renderMapDeviceList();
+        }
+
+        // Map layer switcher
+        function switchMapLayer(layerName) {
+            if (layerName === currentLayer) return;
+            
+            // Remove current layer
+            if (currentLayer === 'satellite') {
+                map.removeLayer(mapLayers.satellite);
+            } else {
+                map.removeLayer(mapLayers[currentLayer]);
+            }
+            
+            // Add new layer
+            if (layerName === 'satellite') {
+                mapLayers.satellite.addTo(map);
+            } else {
+                mapLayers[layerName].addTo(map);
+            }
+            
+            currentLayer = layerName;
+            
+            // Update buttons
+            document.querySelectorAll('.map-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + layerName).classList.add('active');
+        }
+
+        function renderMapDeviceList() {
+            const container = document.getElementById('mapDeviceList');
+            container.innerHTML = devices.map(d => `
+                <div class="device-card">
+                    <div class="device-header">
+                        <div class="device-title ${d.status}">
+                            <div class="device-icon">
+                                <i class="fas fa-broadcast-tower"></i>
+                            </div>
+                            <div>
+                                <h4>${d.id}</h4>
+                                <p>${d.name}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="device-details">
+                        <div class="detail-item">
+                            <label>Latitude</label>
+                            <value>${d.lat.toFixed(5)}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Longitude</label>
+                            <value>${d.lng.toFixed(5)}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Last Seen</label>
+                            <value>${d.lastSeen}</value>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // History
+        function renderHistory() {
+            const container = document.getElementById('historyTable');
+            const historyData = [];
+            
+            devices.forEach((d, i) => {
+                for (let j = 0; j < 5; j++) {
+                    const time = new Date(Date.now() - j * 60000 * (i + 1));
+                    historyData.push({
+                        device: d.id,
+                        time: time.toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }),
+                        lat: d.lat + (Math.random() - 0.5) * 0.01,
+                        lng: d.lng + (Math.random() - 0.5) * 0.01,
+                        signal: d.signal + (Math.random() - 0.5) * 10,
+                        status: j === 0 && d.alert ? 'MAN OVERBOARD' : d.status === 'offline' ? 'No Fix' : 'Safe',
+                        sats: Math.floor(Math.random() * 6) + 6,
+                        details: j === 0 && d.alert ? 'GPS lost + Low RSSI' : d.signal < -110 ? 'RSSI below threshold' : '-'
+                    });
+                }
+            });
+            
+            container.innerHTML = historyData.map(h => `
+                <div class="table-row" style="grid-template-columns: 0.8fr 1.2fr 1fr 0.8fr 1fr 1.2fr;">
+                    <div class="device-name">${h.device}</div>
+                    <div style="font-size: 12px;">${h.time}</div>
+                    <div class="position" style="font-size: 11px;">${h.lat.toFixed(4)},<br>${h.lng.toFixed(4)}</div>
+                    <div>
+                        <div class="signal-bars">
+                            ${getSignalBars(h.signal)}
+                        </div>
+                    </div>
+                    <div>
+                        ${h.status === 'MAN OVERBOARD' ? '<span style="color: var(--accent-red); font-weight: 600; font-size: 11px;">MAN OVERBOARD</span>' : 
+                          h.status === 'No Fix' ? '<span style="color: var(--accent-orange); font-size: 11px;">No Fix</span>' :
+                          '<span style="color: var(--accent-green); font-size: 11px;">● Safe</span>'}
+                        <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">${h.sats} sats</div>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">${h.details}</div>
+                </div>
+            `).join('');
+        }
+
+        // Alerts
+        function renderAlerts() {
+            const container = document.getElementById('alertsList');
+            container.innerHTML = alerts.map(a => `
+                <div class="alert-card ${a.severity === 'High' ? 'warning' : a.severity === 'Medium' ? 'info' : ''}">
+                    <div class="alert-icon">
+                        <i class="fas ${a.icon}"></i>
+                    </div>
+                    <div class="alert-content">
+                        <h4>
+                            ${a.type}
+                            <span class="alert-badge ${a.severity === 'High' ? 'warning' : a.severity === 'Medium' ? 'info' : ''}">${a.severity}</span>
+                        </h4>
+                        <p>${a.message}</p>
+                        <div class="alert-meta">
+                            <span><i class="far fa-clock"></i> ${a.time}</span>
+                            <span><i class="fas fa-broadcast-tower"></i> ${a.device}</span>
+                        </div>
+                    </div>
+                    <button class="btn-resolve" onclick="resolveAlert(${a.id})">
+                        <i class="fas fa-check"></i> Resolve
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function resolveAlert(id) {
+            showToast('Alert resolved successfully', 'success');
+            event.target.closest('.alert-card').style.opacity = '0.5';
+        }
+
+        // Devices
+        function renderDevices() {
+            const container = document.getElementById('devicesList');
+            container.innerHTML = devices.map(d => `
+                <div class="device-card">
+                    <div class="device-header">
+                        <div class="device-title ${d.status}">
+                            <div class="device-icon">
+                                <i class="fas fa-broadcast-tower"></i>
+                            </div>
+                            <div>
+                                <h4>${d.id}</h4>
+                                <p>
+                                    <i class="far fa-user"></i> ${d.name} 
+                                    <span style="color: var(--text-secondary);">(${d.role})</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="device-status">
+                            <span class="status-badge ${d.status}">${d.status}</span>
+                            <div class="device-toggle ${d.status === 'offline' ? 'off' : ''}" onclick="toggleDevice(this, '${d.id}')"></div>
+                            <div class="device-actions">
+                                <button><i class="fas fa-edit"></i></button>
+                                <button><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="signal-info">
+                        <div class="signal-bars">
+                            ${getSignalBars(d.signal)}
+                        </div>
+                        <span>${d.signal.toFixed(1)} dBm</span>
+                    </div>
+                    <div class="device-details">
+                        <div class="detail-item">
+                            <label>Latitude</label>
+                            <value>${d.lat.toFixed(5)}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Longitude</label>
+                            <value>${d.lng.toFixed(5)}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Last Seen</label>
+                            <value>${d.lastSeen}</value>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleDevice(el, id) {
+            el.classList.toggle('off');
+            const isOff = el.classList.contains('off');
+            showToast(`Device ${id} ${isOff ? 'disabled' : 'enabled'}`, 'success');
+        }
+
+        // Users
+        function deleteUser(username) {
+            deleteTarget = username;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('deleteModal').classList.remove('active');
+            deleteTarget = null;
+        }
+
+        function confirmDelete() {
+            if (deleteTarget) {
+                showToast(`User ${deleteTarget} deleted`, 'success');
+                closeModal();
+            }
+        }
+
+        // Settings
+        function selectOption(el, value) {
+            el.parentElement.parentElement.querySelector('input').value = value;
+            el.parentElement.querySelectorAll('.select-option').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        function saveSettings() {
+            showToast('Settings saved successfully', 'success');
+        }
+
+        // Toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.className = 'toast show ' + type;
+            document.getElementById('toastMessage').textContent = message;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Update emergency time
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit', second: '2-digit' });
+            const [time, ampm] = timeStr.split(' ');
+            document.getElementById('emergencyTime').textContent = time;
+        }, 1000);
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.custom-select')) {
+                document.querySelectorAll('.custom-select').forEach(s => s.classList.remove('active'));
             }
         });
     </script>
-    <script src="telemetry.js"></script>
-<script src="auth.js"></script> <!-- if you separated auth -->
-
 </body>
 </html>
