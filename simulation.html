@@ -183,6 +183,38 @@
             backdrop-filter: blur(10px);
             max-width: 320px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .map-overlay.minimized {
+            padding: 10px 15px;
+            max-width: 200px;
+        }
+
+        .map-overlay.minimized .overlay-content {
+            display: none;
+        }
+
+        .overlay-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .minimize-btn {
+            background: none;
+            border: none;
+            color: var(--marine-accent);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .minimize-btn:hover {
+            background: rgba(0, 212, 255, 0.1);
         }
 
         .coord-display {
@@ -290,6 +322,17 @@
 
         .btn-danger:hover {
             box-shadow: 0 5px 20px rgba(255, 51, 51, 0.4);
+        }
+
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            animation: none;
+        }
+
+        .btn-disabled:hover {
+            transform: none;
+            box-shadow: none;
         }
 
         .alert-log {
@@ -541,7 +584,7 @@
 
     <!-- Maneuver Indicator -->
     <div id="maneuver-indicator" class="maneuver-indicator">
-        <i class="fas fa-sync-alt fa-spin"></i> EXECUTING WILLIAMSON TURN
+        <i class="fas fa-sync-alt fa-spin"></i> EXECUTING RECOVERY TURN
     </div>
 
     <!-- MOB Emergency Modal -->
@@ -652,24 +695,34 @@
         <main class="map-container">
             <div id="map"></div>
             
-            <div class="map-overlay">
-                <div class="coord-display" id="vessel-coords">
-                    Vessel: N 50° 54.582' W 001° 24.264'
+            <div class="map-overlay" id="map-overlay">
+                <div class="overlay-header">
+                    <span style="font-weight: bold; color: var(--marine-accent);">
+                        <i class="fas fa-info-circle"></i> Vessel Info
+                    </span>
+                    <button class="minimize-btn" onclick="toggleOverlay()" title="Minimize/Maximize">
+                        <i class="fas fa-minus" id="minimize-icon"></i>
+                    </button>
                 </div>
-                <div class="coord-display" id="wind-data" style="margin-top: 5px;">
-                    Wind: 15kt NW
-                </div>
-                <div class="env-data">
-                    <div>Current: 2.3kt SW</div>
-                    <div>Wave Height: 2.1m</div>
-                    <div>Water Temp: 12.5°C</div>
-                    <div>Visibility: 8.0 NM</div>
-                    <div style="margin-top: 8px; color: var(--marine-accent);">
-                        <i class="fas fa-clock"></i> UTC: <span id="utc-time">--:--:--</span>
+                <div class="overlay-content">
+                    <div class="coord-display" id="vessel-coords">
+                        Vessel: N 50° 54.582' W 001° 24.264'
                     </div>
-                </div>
-                <div class="shipping-lane-info" id="lane-info">
-                    <i class="fas fa-info-circle"></i> In TSS: English Channel Westbound Lane
+                    <div class="coord-display" id="wind-data" style="margin-top: 5px;">
+                        Wind: 15kt NW
+                    </div>
+                    <div class="env-data">
+                        <div>Current: 2.3kt SW</div>
+                        <div>Wave Height: 2.1m</div>
+                        <div>Water Temp: 12.5°C</div>
+                        <div>Visibility: 8.0 NM</div>
+                        <div style="margin-top: 8px; color: var(--marine-accent);">
+                            <i class="fas fa-clock"></i> UTC: <span id="utc-time">--:--:--</span>
+                        </div>
+                    </div>
+                    <div class="shipping-lane-info" id="lane-info">
+                        <i class="fas fa-info-circle"></i> In TSS: English Channel Westbound Lane
+                    </div>
                 </div>
             </div>
         </main>
@@ -717,7 +770,7 @@
                 <i class="fas fa-exclamation-circle"></i> SIMULATE MOB EVENT
             </button>
 
-            <button class="btn-primary" onclick="TelemetrySystem.executeRecovery()">
+            <button class="btn-primary" id="recovery-btn" onclick="TelemetrySystem.startRecovery()" disabled>
                 <i class="fas fa-life-ring"></i> Execute Recovery Turn
             </button>
 
@@ -754,8 +807,8 @@
             recoveryStartTime: null,
             originalHeading: null,
             trailHistory: [],
+            sarPatternActive: false,
             
-            // Realistic Maritime Physics
             PHYSICS: {
                 DRIFT_FACTOR: 0.02,
                 LEEWAY_COEFF: 0.03,
@@ -768,9 +821,7 @@
                 KNOTS_TO_DEG_PER_SEC: 1/3600/60
             },
 
-            // Detailed English Channel Shipping Route - Stays in water!
-            // This route follows the actual Traffic Separation Scheme (TSS)
-            // From Dover Strait westbound toward Atlantic
+            // Fixed shipping route - all points in water
             SHIPPING_ROUTE: [
                 {lat: 51.1200, lon: 1.3500, name: "Dover Strait Entrance"},
                 {lat: 51.0800, lon: 1.2000, name: "Off Folkestone"},
@@ -830,7 +881,7 @@
             },
 
             init() {
-                console.log('Initializing Maritime Simulation System...');
+                console.log('Initializing Maritime Simulation...');
                 this.initAudio();
                 this.initializeScenario();
                 
@@ -839,14 +890,14 @@
                     this.drawShippingRoute();
                     this.startSimulation();
                     this.updateUI();
+                    this.updateRecoveryButton();
                 }, 100);
                 
                 setInterval(() => {
                     const now = new Date();
-                    document.getElementById('utc-time').textContent = now.toISOString().split('T')[1].split('.')[0];
+                    const timeEl = document.getElementById('utc-time');
+                    if (timeEl) timeEl.textContent = now.toISOString().split('T')[1].split('.')[0];
                 }, 1000);
-                
-                console.log('Initialization complete');
             },
 
             initAudio() {
@@ -858,7 +909,6 @@
             },
 
             initializeScenario() {
-                // Start at first waypoint in the water (Dover Strait)
                 const startPos = this.SHIPPING_ROUTE[0];
                 
                 this.vessel = {
@@ -866,7 +916,7 @@
                     type: "Container Ship",
                     imo: "9876543",
                     position: { ...startPos },
-                    heading: 260, // West-southwest
+                    heading: 260,
                     speed: 18.5,
                     draft: 12.5,
                     course: 260,
@@ -877,7 +927,6 @@
                 this.environment = { ...this.ENVIRONMENT_PRESETS.channel };
                 this.trailHistory = [{...startPos}];
 
-                // Initialize crew on vessel
                 this.crew = [
                     {
                         id: 'C001', name: 'John Smith', role: 'Chief Officer', age: 34,
@@ -919,16 +968,13 @@
 
                 this.logEvent('SYSTEM', 'Simulation initialized - English Channel TSS');
                 this.logEvent('NAV', `Starting at: ${startPos.name}`);
-                this.logEvent('NAV', 'Following IMO Traffic Separation Scheme - Westbound');
             },
 
             drawShippingRoute() {
                 if (!MapManager.map) return;
                 
-                // Draw the complete shipping route
                 const routePoints = this.SHIPPING_ROUTE.map(p => [p.lat, p.lon]);
                 
-                // Main shipping lane
                 L.polyline(routePoints, {
                     color: '#00d4ff',
                     weight: 4,
@@ -936,7 +982,6 @@
                     opacity: 0.7
                 }).addTo(MapManager.map).bindPopup('IMO Traffic Separation Scheme - Westbound Lane');
                 
-                // Add waypoint markers (every 5th for clarity)
                 this.SHIPPING_ROUTE.forEach((wp, index) => {
                     if (index % 5 === 0 || index === this.SHIPPING_ROUTE.length - 1) {
                         L.circleMarker([wp.lat, wp.lon], {
@@ -956,7 +1001,6 @@
                 this.simulationInterval = setInterval(() => {
                     this.simulationStep();
                 }, 1000 / this.speedMultiplier);
-                console.log('Simulation started');
             },
 
             simulationStep() {
@@ -982,12 +1026,9 @@
                 if (this.vessel.turning) return;
 
                 const route = this.SHIPPING_ROUTE;
-                
-                // Get current and next waypoint
                 let currentWP = route[this.vessel.waypointIndex];
                 let nextWP = route[this.vessel.waypointIndex + 1];
                 
-                // If at end of route, loop back to start
                 if (!nextWP) {
                     this.vessel.waypointIndex = 0;
                     currentWP = route[0];
@@ -995,21 +1036,15 @@
                     this.logEvent('NAV', 'Route completed - Restarting from Dover Strait');
                 }
 
-                // Calculate exact heading to next waypoint
                 const desiredHeading = this.calculateHeading(currentWP, nextWP);
-                
-                // Smooth heading change (rate of turn limited)
                 const headingDiff = this.normalizeAngle(desiredHeading - this.vessel.heading);
-                const maxTurn = 0.8 * this.speedMultiplier; // Max degrees per second
+                const maxTurn = 0.8 * this.speedMultiplier;
                 const turn = Math.max(-maxTurn, Math.min(maxTurn, headingDiff));
                 
                 this.vessel.heading += turn;
-                
-                // Ensure heading stays normalized
                 this.vessel.heading = (this.vessel.heading + 360) % 360;
                 this.vessel.course = desiredHeading;
 
-                // Calculate movement
                 const speedDegPerSec = (this.vessel.speed * this.PHYSICS.KNOTS_TO_DEG_PER_SEC);
                 const headingRad = (this.vessel.heading * Math.PI) / 180;
                 
@@ -1020,14 +1055,12 @@
                 this.vessel.position.lat += dLat;
                 this.vessel.position.lon += dLon;
 
-                // Check if we've reached the next waypoint
                 const distToNext = this.calculateDistance(this.vessel.position, nextWP);
-                if (distToNext < 0.3) { // Within 0.3 NM
+                if (distToNext < 0.3) {
                     this.vessel.waypointIndex++;
                     this.logEvent('NAV', `Passed waypoint: ${nextWP.name}`);
                 }
 
-                // Record trail every 10 steps
                 if (this.dataPoints % 10 === 0) {
                     this.trailHistory.push({
                         lat: this.vessel.position.lat,
@@ -1036,7 +1069,6 @@
                     if (this.trailHistory.length > 300) this.trailHistory.shift();
                 }
 
-                // Update map
                 if (MapManager.map && MapManager.markers.vessel) {
                     MapManager.updateVesselPosition(
                         this.vessel.position.lat, 
@@ -1045,15 +1077,18 @@
                     );
                 }
                 
-                // Update UI
-                document.getElementById('vessel-coords').textContent = 
+                const coordsEl = document.getElementById('vessel-coords');
+                if (coordsEl) coordsEl.textContent = 
                     `Vessel: ${this.formatCoords(this.vessel.position.lat, this.vessel.position.lon)}`;
-                document.getElementById('vessel-speed').textContent = this.vessel.speed.toFixed(1);
                 
-                // Update lane info
-                const nextName = nextWP ? nextWP.name : 'Route end';
-                document.getElementById('lane-info').innerHTML = 
-                    `<i class="fas fa-info-circle"></i> Next: ${nextName} (${distToNext.toFixed(1)} NM)`;
+                const speedEl = document.getElementById('vessel-speed');
+                if (speedEl) speedEl.textContent = this.vessel.speed.toFixed(1);
+                
+                const laneEl = document.getElementById('lane-info');
+                if (laneEl) {
+                    const nextName = nextWP ? nextWP.name : 'Route end';
+                    laneEl.innerHTML = `<i class="fas fa-info-circle"></i> Next: ${nextName} (${distToNext.toFixed(1)} NM)`;
+                }
             },
 
             calculateHeading(from, to) {
@@ -1070,7 +1105,7 @@
             },
 
             calculateDistance(p1, p2) {
-                const R = 3440; // Earth radius in nautical miles
+                const R = 3440;
                 const dLat = (p2.lat - p1.lat) * Math.PI / 180;
                 const dLon = (p2.lon - p1.lon) * Math.PI / 180;
                 const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -1086,8 +1121,17 @@
                 return angle;
             },
 
-            executeRecovery() {
-                if (!this.mobVictim || this.recoveryMode) return;
+            // FIXED: Recovery button now properly starts the turn
+            startRecovery() {
+                if (!this.mobVictim) {
+                    this.logEvent('WARN', 'No active MOB to recover');
+                    return;
+                }
+                
+                if (this.recoveryMode) {
+                    this.logEvent('WARN', 'Recovery already in progress');
+                    return;
+                }
                 
                 this.recoveryMode = true;
                 this.recoveryPhase = 0;
@@ -1097,70 +1141,75 @@
                 const maneuver = document.getElementById('maneuver-type').value;
                 this.logEvent('RECOVERY', `Initiating ${maneuver.toUpperCase()} turn for MOB recovery`);
                 
-                document.getElementById('maneuver-indicator').style.display = 'block';
-                document.getElementById('maneuver-indicator').innerHTML = 
-                    `<i class="fas fa-sync-alt fa-spin"></i> EXECUTING ${maneuver.toUpperCase()} TURN`;
+                const indicator = document.getElementById('maneuver-indicator');
+                if (indicator) {
+                    indicator.style.display = 'block';
+                    indicator.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> EXECUTING ${maneuver.toUpperCase()} TURN`;
+                }
+                
+                this.updateRecoveryButton();
             },
 
             executeRecoveryStep() {
                 const maneuver = document.getElementById('maneuver-type').value;
-                const elapsed = (Date.now() - this.recoveryStartTime) / 1000 * this.speedMultiplier;
                 
                 if (maneuver === 'williamson') {
-                    this.executeWilliamsonTurn(elapsed);
+                    this.executeWilliamsonTurn();
                 } else if (maneuver === 'anderson') {
-                    this.executeAndersonTurn(elapsed);
+                    this.executeAndersonTurn();
                 } else if (maneuver === 'scharnow') {
-                    this.executeScharnowTurn(elapsed);
+                    this.executeScharnowTurn();
                 }
             },
 
-            executeWilliamsonTurn(elapsed) {
+            executeWilliamsonTurn() {
                 const mobBearing = this.calculateBearingToMOB();
                 const turnSide = mobBearing > this.vessel.heading ? 1 : -1;
                 
                 if (this.recoveryPhase === 0) {
+                    // Phase 1: Turn 60° toward casualty side
                     const targetChange = 60 * turnSide;
                     const currentChange = this.normalizeAngle(this.vessel.heading - this.originalHeading);
                     
                     if (Math.abs(currentChange) < Math.abs(targetChange)) {
                         this.vessel.heading += turnSide * 2 * this.speedMultiplier;
+                        this.vessel.heading = (this.vessel.heading + 360) % 360;
                     } else {
                         this.recoveryPhase = 1;
                         this.logEvent('RECOVERY', 'Williamson: Rudder hard over to opposite side');
                     }
                 } else if (this.recoveryPhase === 1) {
+                    // Phase 2: Turn opposite direction to reciprocal
                     const reciprocal = (this.originalHeading + 180) % 360;
                     const target = reciprocal + (20 * -turnSide);
-                    const diff = this.normalizeAngle(target - this.vessel.heading);
+                    let diff = this.normalizeAngle(target - this.vessel.heading);
                     
                     if (Math.abs(diff) > 5) {
                         this.vessel.heading += -turnSide * 2 * this.speedMultiplier;
+                        this.vessel.heading = (this.vessel.heading + 360) % 360;
                     } else {
                         this.recoveryPhase = 2;
                         this.logEvent('RECOVERY', 'Williamson: Approaching reciprocal course');
                     }
                 } else {
+                    // Phase 3: Slow down and complete
                     this.vessel.speed = Math.max(5, this.vessel.speed - 0.5 * this.speedMultiplier);
                     
                     if (this.vessel.speed <= 5) {
                         this.recoveryMode = false;
                         this.logEvent('RECOVERY', 'Williamson turn complete - commencing search');
-                        document.getElementById('maneuver-indicator').style.display = 'none';
+                        
+                        const indicator = document.getElementById('maneuver-indicator');
+                        if (indicator) indicator.style.display = 'none';
+                        
                         this.initiateSearchPattern();
                     }
                 }
                 
-                const speedDegPerSec = (this.vessel.speed * this.PHYSICS.KNOTS_TO_DEG_PER_SEC);
-                const headingRad = (this.vessel.heading * Math.PI) / 180;
-                this.vessel.position.lat += speedDegPerSec * Math.cos(headingRad) * this.speedMultiplier;
-                this.vessel.position.lon += (speedDegPerSec * Math.sin(headingRad)) / 
-                    Math.cos(this.vessel.position.lat * Math.PI / 180) * this.speedMultiplier;
-                
-                MapManager.updateVesselPosition(this.vessel.position.lat, this.vessel.position.lon, this.vessel.heading);
+                this.moveVesselDuringTurn();
             },
 
-            executeAndersonTurn(elapsed) {
+            executeAndersonTurn() {
                 const mobBearing = this.calculateBearingToMOB();
                 const turnSide = mobBearing > this.vessel.heading ? 1 : -1;
                 
@@ -1169,25 +1218,24 @@
                 
                 if (Math.abs(currentChange) < Math.abs(targetChange)) {
                     this.vessel.heading += turnSide * 3 * this.speedMultiplier;
+                    this.vessel.heading = (this.vessel.heading + 360) % 360;
                 } else {
                     this.vessel.speed = Math.max(5, this.vessel.speed - 1 * this.speedMultiplier);
                     if (this.vessel.speed <= 5) {
                         this.recoveryMode = false;
                         this.logEvent('RECOVERY', 'Anderson turn complete');
-                        document.getElementById('maneuver-indicator').style.display = 'none';
+                        
+                        const indicator = document.getElementById('maneuver-indicator');
+                        if (indicator) indicator.style.display = 'none';
+                        
+                        this.initiateSearchPattern();
                     }
                 }
                 
-                const speedDegPerSec = (this.vessel.speed * this.PHYSICS.KNOTS_TO_DEG_PER_SEC);
-                const headingRad = (this.vessel.heading * Math.PI) / 180;
-                this.vessel.position.lat += speedDegPerSec * Math.cos(headingRad) * this.speedMultiplier;
-                this.vessel.position.lon += (speedDegPerSec * Math.sin(headingRad)) / 
-                    Math.cos(this.vessel.position.lat * Math.PI / 180) * this.speedMultiplier;
-                
-                MapManager.updateVesselPosition(this.vessel.position.lat, this.vessel.position.lon, this.vessel.heading);
+                this.moveVesselDuringTurn();
             },
 
-            executeScharnowTurn(elapsed) {
+            executeScharnowTurn() {
                 const mobBearing = this.calculateBearingToMOB();
                 const turnSide = mobBearing > this.vessel.heading ? 1 : -1;
                 
@@ -1196,26 +1244,43 @@
                 
                 if (Math.abs(currentChange) < Math.abs(targetChange)) {
                     this.vessel.heading += turnSide * 2.5 * this.speedMultiplier;
+                    this.vessel.heading = (this.vessel.heading + 360) % 360;
                 } else {
                     const reciprocal = (this.originalHeading + 180) % 360;
                     const diff = this.normalizeAngle(reciprocal - this.vessel.heading);
                     if (Math.abs(diff) > 3) {
                         this.vessel.heading += (diff > 0 ? 1 : -1) * this.speedMultiplier;
+                        this.vessel.heading = (this.vessel.heading + 360) % 360;
                     } else {
                         this.recoveryMode = false;
                         this.vessel.speed = 5;
                         this.logEvent('RECOVERY', 'Scharnow turn complete');
-                        document.getElementById('maneuver-indicator').style.display = 'none';
+                        
+                        const indicator = document.getElementById('maneuver-indicator');
+                        if (indicator) indicator.style.display = 'none';
+                        
+                        this.initiateSearchPattern();
                     }
                 }
                 
+                this.moveVesselDuringTurn();
+            },
+
+            moveVesselDuringTurn() {
                 const speedDegPerSec = (this.vessel.speed * this.PHYSICS.KNOTS_TO_DEG_PER_SEC);
                 const headingRad = (this.vessel.heading * Math.PI) / 180;
+                
                 this.vessel.position.lat += speedDegPerSec * Math.cos(headingRad) * this.speedMultiplier;
                 this.vessel.position.lon += (speedDegPerSec * Math.sin(headingRad)) / 
                     Math.cos(this.vessel.position.lat * Math.PI / 180) * this.speedMultiplier;
                 
-                MapManager.updateVesselPosition(this.vessel.position.lat, this.vessel.position.lon, this.vessel.heading);
+                if (MapManager.map && MapManager.markers.vessel) {
+                    MapManager.updateVesselPosition(
+                        this.vessel.position.lat, 
+                        this.vessel.position.lon, 
+                        this.vessel.heading
+                    );
+                }
             },
 
             calculateBearingToMOB() {
@@ -1246,9 +1311,9 @@
                             this.updateMOBTrail(member);
                         }
                     } else {
-                        // Crew stays on vessel
-                        member.position.lat = this.vessel.position.lat + (Math.random() - 0.5) * 0.00005;
-                        member.position.lon = this.vessel.position.lon + (Math.random() - 0.5) * 0.00005;
+                        // Crew stays on vessel - very small random movement
+                        member.position.lat = this.vessel.position.lat + (Math.random() - 0.5) * 0.00002;
+                        member.position.lon = this.vessel.position.lon + (Math.random() - 0.5) * 0.00002;
                     }
                     
                     if (MapManager.map) {
@@ -1414,6 +1479,7 @@
                 osc.stop(now + 0.5);
                 
                 setTimeout(() => {
+                    if (!this.audioContext) return;
                     const osc2 = this.audioContext.createOscillator();
                     const gain2 = this.audioContext.createGain();
                     osc2.connect(gain2);
@@ -1427,25 +1493,38 @@
                 }, 700);
             },
 
+            // FIXED: MOB position now correctly calculated relative to vessel
             simulateMOB() {
                 const victim = this.crew[Math.floor(Math.random() * this.crew.length)];
                 
-                const fallOffset = {
-                    lat: (Math.random() - 0.5) * 0.0003,
-                    lon: (Math.random() - 0.5) * 0.0003
-                };
+                // FIXED: Proper fall calculation - person falls from vessel position with small offset
+                // No random large offsets that put them on land
+                const fallDistance = 0.0001 + (Math.random() * 0.0001); // 10-20 meters from ship
+                const fallAngle = Math.random() * Math.PI * 2; // Random direction
+                
+                // Calculate fall position based on vessel heading and fall direction
+                const fallOffsetLat = Math.cos(fallAngle) * fallDistance;
+                const fallOffsetLon = Math.sin(fallAngle) * fallDistance / Math.cos(this.vessel.position.lat * Math.PI / 180);
                 
                 victim.status = 'mob';
                 victim.mobTime = Date.now();
+                
+                // FIXED: Position is exactly at vessel position plus small fall offset
                 victim.position = { 
-                    lat: this.vessel.position.lat + fallOffset.lat,
-                    lon: this.vessel.position.lon + fallOffset.lon
+                    lat: this.vessel.position.lat + fallOffsetLat,
+                    lon: this.vessel.position.lon + fallOffsetLon
                 };
+                
                 victim.biometrics.heartRate = 160;
                 victim.conscious = true;
                 victim.hypothermiaAlert = false;
                 victim.deathAlert = false;
-                victim.history = [{...victim.position, time: Date.now(), temp: 37.0}];
+                victim.history = [{
+                    lat: victim.position.lat,
+                    lon: victim.position.lon,
+                    time: Date.now(),
+                    temp: 37.0
+                }];
                 
                 this.mobVictim = victim;
                 this.mobGPSPosition = {...victim.position};
@@ -1454,17 +1533,21 @@
                 this.showMOBModal(victim);
                 
                 if (MapManager.map) {
-                    MapManager.map.setView([victim.position.lat, victim.position.lon], 15);
+                    MapManager.map.setView([victim.position.lat, victim.position.lon], 16);
                     MapManager.addMOBMarker(victim);
                 }
                 
                 this.logEvent('MOB', `Person in water: ${victim.name}`);
                 this.logEvent('MOB', `Position: ${this.formatCoords(victim.position.lat, victim.position.lon)}`);
+                this.updateRecoveryButton();
             },
 
             showMOBModal(victim) {
                 const modal = document.getElementById('mob-modal');
                 const details = document.getElementById('mob-details');
+                
+                if (!modal || !details) return;
+                
                 const drift = this.calculateDrift(victim);
                 const survival = this.calculateSurvivalTime(victim);
                 const distance = this.calculateDistance(this.vessel.position, victim.position);
@@ -1482,31 +1565,45 @@
                 `;
                 
                 const survivalPercent = Math.min(100, (survival / 120) * 100);
-                document.getElementById('survival-bar').style.width = survivalPercent + '%';
-                
                 const bar = document.getElementById('survival-bar');
-                if (survivalPercent > 70) {
-                    bar.style.background = 'linear-gradient(90deg, #00ff88, #00ff88)';
-                } else if (survivalPercent > 30) {
-                    bar.style.background = 'linear-gradient(90deg, #ffaa00, #ffaa00)';
-                } else {
-                    bar.style.background = 'linear-gradient(90deg, #ff3333, #ff3333)';
+                if (bar) {
+                    bar.style.width = survivalPercent + '%';
+                    if (survivalPercent > 70) {
+                        bar.style.background = 'linear-gradient(90deg, #00ff88, #00ff88)';
+                    } else if (survivalPercent > 30) {
+                        bar.style.background = 'linear-gradient(90deg, #ffaa00, #ffaa00)';
+                    } else {
+                        bar.style.background = 'linear-gradient(90deg, #ff3333, #ff3333)';
+                    }
                 }
                 
                 modal.style.display = 'flex';
             },
 
             acknowledgeMOB() {
-                document.getElementById('mob-modal').style.display = 'none';
+                const modal = document.getElementById('mob-modal');
+                if (modal) modal.style.display = 'none';
                 this.logEvent('ACK', 'MOB alert acknowledged');
             },
 
+            // FIXED: SAR pattern now properly draws from modal button
             initiateSearchPattern() {
-                if (!this.mobVictim) return;
+                if (!this.mobVictim) {
+                    this.logEvent('WARN', 'No MOB position for search pattern');
+                    return;
+                }
+                
+                // Close modal if open
+                const modal = document.getElementById('mob-modal');
+                if (modal) modal.style.display = 'none';
                 
                 const mob = this.mobVictim;
-                const searchTime = 0.25;
+                
+                // Calculate search datum with drift
+                const searchTime = 0.25; // 15 minutes to return
                 const drift = this.calculateDrift(mob);
+                
+                // FIXED: Proper datum calculation
                 const datum = {
                     lat: mob.position.lat + (drift.dLat * searchTime * 3600 / this.speedMultiplier),
                     lon: mob.position.lon + (drift.dLon * searchTime * 3600 / this.speedMultiplier)
@@ -1516,7 +1613,9 @@
                     MapManager.drawExpandingSquareSearch(datum, this.environment.windDir);
                 }
                 
-                this.logEvent('SAR', `Search initiated at datum ${this.formatCoords(datum.lat, datum.lon)}`);
+                this.sarPatternActive = true;
+                this.logEvent('SAR', `Expanding square search initiated at datum`);
+                this.logEvent('SAR', `Datum: ${this.formatCoords(datum.lat, datum.lon)}`);
             },
 
             calculateSurvivalTime(person) {
@@ -1540,14 +1639,17 @@
 
             setSimulationSpeed(speed) {
                 this.speedMultiplier = parseInt(speed);
-                document.getElementById('speed-display').textContent = speed + 'x';
+                const display = document.getElementById('speed-display');
+                if (display) display.textContent = speed + 'x';
+                
                 clearInterval(this.simulationInterval);
                 this.simulationInterval = setInterval(() => this.simulationStep(), 1000 / this.speedMultiplier);
             },
 
             setEnvironment(preset) {
                 this.environment = { ...this.ENVIRONMENT_PRESETS[preset] };
-                document.getElementById('wind-data').textContent = 
+                const windEl = document.getElementById('wind-data');
+                if (windEl) windEl.textContent = 
                     `Wind: ${this.environment.windSpeed}kt ${this.getCardinalDir(this.environment.windDir)}`;
                 this.logEvent('ENV', `Environment: ${this.environment.currentName}`);
             },
@@ -1555,7 +1657,10 @@
             resetSimulation() {
                 this.mobVictim = null;
                 this.recoveryMode = false;
-                document.getElementById('maneuver-indicator').style.display = 'none';
+                this.sarPatternActive = false;
+                
+                const indicator = document.getElementById('maneuver-indicator');
+                if (indicator) indicator.style.display = 'none';
                 
                 this.crew.forEach(c => {
                     c.status = 'safe';
@@ -1586,6 +1691,7 @@
                 
                 this.logEvent('SYSTEM', 'Simulation reset');
                 this.updateUI();
+                this.updateRecoveryButton();
             },
 
             updateTrail() {
@@ -1604,7 +1710,8 @@
             },
 
             updateUI() {
-                document.getElementById('stat-records').textContent = this.dataPoints.toLocaleString();
+                const recordsEl = document.getElementById('stat-records');
+                if (recordsEl) recordsEl.textContent = this.dataPoints.toLocaleString();
                 
                 const counts = {
                     safe: this.crew.filter(c => c.status === 'safe').length,
@@ -1613,19 +1720,28 @@
                     mob: this.crew.filter(c => c.status === 'mob').length
                 };
                 
-                document.getElementById('count-safe').textContent = counts.safe;
-                document.getElementById('count-warning').textContent = counts.warning;
-                document.getElementById('count-alert').textContent = counts.alert;
-                document.getElementById('count-mob').textContent = counts.mob;
+                const safeEl = document.getElementById('count-safe');
+                const warnEl = document.getElementById('count-warning');
+                const alertEl = document.getElementById('count-alert');
+                const mobEl = document.getElementById('count-mob');
+                
+                if (safeEl) safeEl.textContent = counts.safe;
+                if (warnEl) warnEl.textContent = counts.warning;
+                if (alertEl) alertEl.textContent = counts.alert;
+                if (mobEl) mobEl.textContent = counts.mob;
                 
                 const activeAlerts = this.alerts.filter(a => a.severity === 'mob' || a.severity === 'critical').length;
-                document.getElementById('stat-alerts').textContent = activeAlerts;
+                const statAlerts = document.getElementById('stat-alerts');
+                if (statAlerts) statAlerts.textContent = activeAlerts;
                 
-                if (this.mobVictim) {
-                    const dist = this.calculateDistance(this.vessel.position, this.mobVictim.position);
-                    document.getElementById('mob-distance').textContent = dist.toFixed(2);
-                } else {
-                    document.getElementById('mob-distance').textContent = '--';
+                const mobDistEl = document.getElementById('mob-distance');
+                if (mobDistEl) {
+                    if (this.mobVictim) {
+                        const dist = this.calculateDistance(this.vessel.position, this.mobVictim.position);
+                        mobDistEl.textContent = dist.toFixed(2);
+                    } else {
+                        mobDistEl.textContent = '--';
+                    }
                 }
                 
                 const crewList = document.getElementById('crew-list');
@@ -1666,12 +1782,32 @@
                 }
             },
 
+            // FIXED: Update recovery button state
+            updateRecoveryButton() {
+                const btn = document.getElementById('recovery-btn');
+                if (!btn) return;
+                
+                if (this.mobVictim && !this.recoveryMode) {
+                    btn.disabled = false;
+                    btn.classList.remove('btn-disabled');
+                    btn.innerHTML = '<i class="fas fa-life-ring"></i> Execute Recovery Turn';
+                } else if (this.recoveryMode) {
+                    btn.disabled = true;
+                    btn.classList.add('btn-disabled');
+                    btn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Recovery in Progress...';
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('btn-disabled');
+                    btn.innerHTML = '<i class="fas fa-life-ring"></i> Execute Recovery Turn';
+                }
+            },
+
             logEvent(type, message) {
                 const log = document.getElementById('alert-log');
                 if (!log) return;
                 
                 const entry = document.createElement('div');
-                entry.className = `log-entry ${type === 'MOB' || type === 'CRITICAL' ? 'critical' : type === 'RECOVERY' ? 'mob' : ''}`;
+                entry.className = `log-entry ${type === 'MOB' || type === 'CRITICAL' ? 'critical' : type === 'RECOVERY' || type === 'SAR' ? 'mob' : ''}`;
                 
                 const now = new Date();
                 const timeStr = now.toTimeString().split(' ')[0];
@@ -1715,22 +1851,15 @@
             mobMarker: null,
 
             init() {
-                console.log('Initializing Map...');
-                
                 const mapContainer = document.getElementById('map');
-                if (!mapContainer) {
-                    console.error('Map container not found!');
-                    return;
-                }
+                if (!mapContainer) return;
                 
-                // Center on English Channel
                 this.map = L.map('map', { 
                     zoomControl: false,
                     center: [50.6, -1.5],
                     zoom: 9
                 });
 
-                // Define layers
                 this.layers = {
                     satellite: L.layerGroup([
                         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -1758,7 +1887,6 @@
                 this.layers.satellite.addTo(this.map);
                 L.control.zoom({ position: 'bottomright' }).addTo(this.map);
                 
-                // Vessel marker
                 const vesselIcon = L.divIcon({
                     className: 'vessel-icon',
                     html: '<i class="fas fa-ship" style="font-size: 28px; color: #00d4ff; filter: drop-shadow(0 0 10px rgba(0,212,255,0.8));"></i>',
@@ -1780,8 +1908,6 @@
                 `);
                 
                 TelemetrySystem.crew.forEach(c => this.updateCrewMarker(c));
-                
-                console.log('Map initialized');
             },
 
             changeTheme(theme) {
@@ -1907,15 +2033,15 @@
                     color: '#ff3333',
                     fillColor: '#ff3333',
                     fillOpacity: 0.1,
-                    radius: 500,
+                    radius: 200, // Start smaller
                     weight: 2,
                     dashArray: '5, 5'
                 }).addTo(this.map);
                 
-                let radius = 500;
+                let radius = 200;
                 const expandCircle = () => {
                     if (!this.mobMarker || member.status !== 'mob') return;
-                    radius += 10;
+                    radius += 5; // Slower expansion
                     this.mobMarker.setRadius(radius);
                     setTimeout(expandCircle, 1000);
                 };
@@ -1935,7 +2061,7 @@
                 
                 const searchSpeed = 8;
                 const legTime = 0.083;
-                const legs = 16;
+                const legs = 12; // Reduced for visibility
                 
                 const points = [[datum.lat, datum.lon]];
                 let currentPos = {...datum};
@@ -1976,6 +2102,9 @@
                     weight: 2,
                     fillOpacity: 1
                 }).addTo(this.map).bindPopup('Search Datum');
+                
+                // Fit map to show search pattern
+                this.map.fitBounds(this.searchPattern.getBounds().pad(0.2));
             },
 
             clearSearchPattern() {
@@ -1986,6 +2115,7 @@
             }
         };
 
+        // Global functions
         function confirmExit() {
             if (TelemetrySystem.mobVictim) {
                 return confirm('MOB incident in progress! Are you sure you want to leave?');
@@ -1993,8 +2123,26 @@
             return true;
         }
 
+        // FIXED: Toggle overlay minimize/maximize
+        let overlayMinimized = false;
+        function toggleOverlay() {
+            const overlay = document.getElementById('map-overlay');
+            const icon = document.getElementById('minimize-icon');
+            
+            if (!overlay) return;
+            
+            overlayMinimized = !overlayMinimized;
+            
+            if (overlayMinimized) {
+                overlay.classList.add('minimized');
+                if (icon) icon.className = 'fas fa-plus';
+            } else {
+                overlay.classList.remove('minimized');
+                if (icon) icon.className = 'fas fa-minus';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, starting...');
             TelemetrySystem.init();
         });
     </script>
