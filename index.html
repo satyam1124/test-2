@@ -2357,6 +2357,18 @@
         ];
 
         let currentUser = null;
+
+    // Check if already logged in
+    if (localStorage.getItem('mob_logged_in') === 'true') {
+        const savedUser = localStorage.getItem('mob_user');
+        const savedRole = localStorage.getItem('mob_role');
+        if (savedUser) {
+            currentUser = { username: savedUser, role: savedRole || 'ADMIN' };
+            document.getElementById('currentUser').textContent = savedUser;
+            showApp();
+        }
+    }
+
         let map = null;
         let currentLayer = 'satellite';
         let deleteTarget = null;
@@ -2400,6 +2412,10 @@
                 if (user) {
                     currentUser = { username: user.username, role: user.role.toUpperCase() };
                     document.getElementById('currentUser').textContent = username;
+                    // Save login state
+                    localStorage.setItem('mob_logged_in', 'true');
+                    localStorage.setItem('mob_user', username);
+                    localStorage.setItem('mob_role', user.role.toUpperCase());
                     showApp();
                     showToast('Welcome back, ' + username + '!', 'success');
                 } else {
@@ -2421,6 +2437,9 @@
         }
 
         function logout() {
+            localStorage.removeItem('mob_logged_in');
+            localStorage.removeItem('mob_user');
+            localStorage.removeItem('mob_role');
             location.reload();
         }
 
