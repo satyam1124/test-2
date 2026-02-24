@@ -904,8 +904,12 @@
                 this.initializeScenario();
                 
                 setTimeout(() => {
-                    MapManager.init();
-                    this.drawShippingRoute();
+                    try {
+                        MapManager.init();
+                        this.drawShippingRoute();
+                    } catch(e) {
+                        console.warn('Map initialization failed:', e.message);
+                    }
                     this.startSimulation();
                     this.setEnvironment('channel');
                     this.updateUI();
