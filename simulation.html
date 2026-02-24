@@ -559,6 +559,11 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
+        .wind-arrow {
+            display: inline-block;
+            transition: transform 0.5s ease;
+        }
+
         @media (max-width: 1024px) {
             .container {
                 grid-template-columns: 1fr;
@@ -653,7 +658,16 @@
                     <i class="fas fa-ruler" style="color: var(--warning-yellow);"></i>
                 </div>
                 <div class="stat-value" id="mob-distance">--</div>
-                <div style="font-size: 0.8rem; color: var(--text-secondary);">nautical miles</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary);">NM &nbsp;|&nbsp; Brg: <span id="mob-bearing">---°</span></div>
+            </div>
+
+            <div class="stat-card" id="survival-time-card" style="display: none;">
+                <div class="stat-header">
+                    <span>Est. Survival Time</span>
+                    <i class="fas fa-hourglass-half" style="color: var(--alert-red);"></i>
+                </div>
+                <div class="stat-value" id="survival-time">--</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary);">minutes remaining</div>
             </div>
 
             <div class="status-grid">
@@ -709,14 +723,14 @@
                     <div class="coord-display" id="vessel-coords">
                         Vessel: N 50° 54.582' W 001° 24.264'
                     </div>
-                    <div class="coord-display" id="wind-data" style="margin-top: 5px;">
-                        Wind: 15kt NW
+                    <div class="coord-display" id="wind-data" style="margin-top: 5px;" aria-label="Wind direction and speed">
+                        <span class="wind-arrow" id="wind-arrow" aria-hidden="true">↑</span> Wind: 15kt NW
                     </div>
-                    <div class="env-data">
-                        <div>Current: 2.3kt SW</div>
-                        <div>Wave Height: 2.1m</div>
-                        <div>Water Temp: 12.5°C</div>
-                        <div>Visibility: 8.0 NM</div>
+                    <div class="env-data" id="env-data">
+                        <div id="env-current" aria-label="Current direction and speed"><span class="wind-arrow" id="current-arrow" aria-hidden="true" style="font-size:0.8rem;">↑</span> Current: 2.3kt SW</div>
+                        <div id="env-wave">Wave Height: 2.1m</div>
+                        <div id="env-water-temp">Water Temp: 12.5°C</div>
+                        <div id="env-visibility">Visibility: 8.0 NM</div>
                         <div style="margin-top: 8px; color: var(--marine-accent);">
                             <i class="fas fa-clock"></i> UTC: <span id="utc-time">--:--:--</span>
                         </div>
@@ -802,6 +816,7 @@
             speedMultiplier: 1,
             audioContext: null,
             dataPoints: 0,
+            simulationTime: 0,
             mobVictim: null,
             recoveryMode: false,
             recoveryPhase: 0,
@@ -818,6 +833,8 @@
                 HEART_RATE_STRESS: 140,
                 BODY_TEMP_NORMAL: 37.0,
                 BODY_TEMP_DROP: 0.5,
+                BODY_TEMP_CARDIAC_ARREST: 27.0,
+                OXYGEN_SAT_NORMAL: 98,
                 NM_TO_DEG: 1/60,
                 KNOTS_TO_DEG_PER_SEC: 1/3600/60
             },
@@ -887,9 +904,14 @@
                 this.initializeScenario();
                 
                 setTimeout(() => {
-                    MapManager.init();
-                    this.drawShippingRoute();
+                    try {
+                        MapManager.init();
+                        this.drawShippingRoute();
+                    } catch(e) {
+                        console.warn('Map initialization failed:', e.message);
+                    }
                     this.startSimulation();
+                    this.setEnvironment('channel');
                     this.updateUI();
                     this.updateRecoveryButton();
                 }, 100);
@@ -912,6 +934,7 @@
             initializeScenario() {
                 const startPos = this.SHIPPING_ROUTE[0];
                 
+                this.simulationTime = 0;
                 this.vessel = {
                     name: "M/V ATLANTIC GUARDIAN",
                     type: "Container Ship",
@@ -1001,11 +1024,13 @@
                 this.isRunning = true;
                 this.simulationInterval = setInterval(() => {
                     this.simulationStep();
-                }, 1000 / this.speedMultiplier);
+                }, 1000);
             },
 
             simulationStep() {
                 try {
+                    this.simulationTime += this.speedMultiplier;
+
                     if (this.recoveryMode) {
                         this.executeRecoveryStep();
                     } else {
@@ -1080,7 +1105,7 @@
                 
                 const coordsEl = document.getElementById('vessel-coords');
                 if (coordsEl) coordsEl.textContent = 
-                    `Vessel: ${this.formatCoords(this.vessel.position.lat, this.vessel.position.lon)}`;
+                    `Vessel: ${this.formatCoords(this.vessel.position.lat, this.vessel.position.lon)} HDG ${Math.round(this.vessel.heading)}°`;
                 
                 const speedEl = document.getElementById('vessel-speed');
                 if (speedEl) speedEl.textContent = this.vessel.speed.toFixed(1);
@@ -1326,11 +1351,11 @@
             calculateDrift(person) {
                 const windRad = (this.environment.windDir * Math.PI) / 180;
                 const currentRad = (this.environment.currentDir * Math.PI) / 180;
+                const latCos = Math.cos(person.position.lat * Math.PI / 180);
                 
                 const currentSpeedDeg = (this.environment.currentSpeed * this.PHYSICS.KNOTS_TO_DEG_PER_SEC);
                 const currentLat = currentSpeedDeg * Math.cos(currentRad) * this.speedMultiplier;
-                const currentLon = (currentSpeedDeg * Math.sin(currentRad)) / 
-                    Math.cos(person.position.lat * Math.PI / 180) * this.speedMultiplier;
+                const currentLon = (currentSpeedDeg * Math.sin(currentRad)) / latCos * this.speedMultiplier;
                 
                 let leewayFactor = 0.03;
                 if (person.clothing === 'immersion_suit') leewayFactor = 0.05;
@@ -1339,13 +1364,11 @@
                 
                 const leewaySpeed = (this.environment.windSpeed * leewayFactor * this.PHYSICS.KNOTS_TO_DEG_PER_SEC);
                 const leewayLat = leewaySpeed * Math.cos(windRad) * this.speedMultiplier;
-                const leewayLon = (leewaySpeed * Math.sin(windRad)) / 
-                    Math.cos(person.position.lat * Math.PI / 180) * this.speedMultiplier;
+                const leewayLon = (leewaySpeed * Math.sin(windRad)) / latCos * this.speedMultiplier;
                 
                 const stokesSpeed = (this.environment.waveHeight * 0.1 * this.PHYSICS.KNOTS_TO_DEG_PER_SEC);
                 const stokesLat = stokesSpeed * Math.cos(windRad) * this.speedMultiplier;
-                const stokesLon = (stokesSpeed * Math.sin(windRad)) / 
-                    Math.cos(person.position.lat * Math.PI / 180) * this.speedMultiplier;
+                const stokesLon = (stokesSpeed * Math.sin(windRad)) / latCos * this.speedMultiplier;
                 
                 let swimLat = 0, swimLon = 0;
                 if (person.biometrics.bodyTemp > 35 && person.conscious !== false && 
@@ -1354,66 +1377,86 @@
                                      person.swimmingAbility === 'good' ? 0.3 : 0.1;
                     const swimSpeedDeg = (swimSpeed * this.PHYSICS.KNOTS_TO_DEG_PER_SEC);
                     swimLat = swimSpeedDeg * Math.cos(currentRad) * this.speedMultiplier * 0.3;
-                    swimLon = (swimSpeedDeg * Math.sin(currentRad)) / 
-                        Math.cos(person.position.lat * Math.PI / 180) * this.speedMultiplier * 0.3;
+                    swimLon = (swimSpeedDeg * Math.sin(currentRad)) / latCos * this.speedMultiplier * 0.3;
                 }
+
+                // Compute speed components in knots (reuse direction components already calculated)
+                const speedN = this.environment.currentSpeed * Math.cos(currentRad) +
+                               this.environment.windSpeed * leewayFactor * Math.cos(windRad) +
+                               this.environment.waveHeight * 0.1 * Math.cos(windRad);
+                const speedE = this.environment.currentSpeed * Math.sin(currentRad) +
+                               this.environment.windSpeed * leewayFactor * Math.sin(windRad) +
+                               this.environment.waveHeight * 0.1 * Math.sin(windRad);
                 
                 return {
                     dLat: currentLat + leewayLat + stokesLat + swimLat,
                     dLon: currentLon + leewayLon + stokesLon + swimLon,
-                    totalSpeed: Math.sqrt(Math.pow(currentLat + leewayLat, 2) + 
-                                         Math.pow(currentLon + leewayLon, 2)) * 3600 * 60
+                    totalSpeed: Math.sqrt(speedN * speedN + speedE * speedE)
                 };
             },
 
             updateMOBTrail(member) {
                 if (!MapManager.map) return;
-                
+                if (member.history.length < 2) return;
+                // Only rebuild polyline when a new history point was just added
+                if (member._lastTrailLength === member.history.length) return;
+                member._lastTrailLength = member.history.length;
+
                 const points = member.history.map(h => [h.lat, h.lon]);
                 
                 if (member.trailLine) {
-                    MapManager.map.removeLayer(member.trailLine);
+                    member.trailLine.setLatLngs(points);
+                } else {
+                    member.trailLine = L.polyline(points, {
+                        color: '#ff3333',
+                        weight: 3,
+                        dashArray: '5, 5',
+                        opacity: 0.8
+                    }).addTo(MapManager.map);
                 }
-                
-                member.trailLine = L.polyline(points, {
-                    color: '#ff3333',
-                    weight: 3,
-                    dashArray: '5, 5',
-                    opacity: 0.8
-                }).addTo(MapManager.map);
             },
 
             updateBiometrics() {
+                const waterTemp = this.environment.waterTemp;
                 this.crew.forEach(member => {
                     if (member.status === 'mob') {
-                        const timeInWater = (Date.now() - member.mobTime) / 1000;
-                        const hoursInWater = timeInWater / 3600;
-                        
+                        const timeInWaterSec = this.simulationTime - (member.mobTick || 0);
+                        const hoursInWater = timeInWaterSec / 3600;
+
                         let insulationFactor = 1.0;
-                        if (member.clothing === 'immersion_suit') insulationFactor = 0.2;
-                        else if (member.clothing === 'safety_vest') insulationFactor = 0.7;
-                        else if (member.clothing === 'work_uniform') insulationFactor = 0.85;
-                        
+                        if (member.clothing === 'immersion_suit') insulationFactor = 0.15;
+                        else if (member.clothing === 'safety_vest') insulationFactor = 0.65;
+                        else if (member.clothing === 'work_uniform') insulationFactor = 0.80;
+                        else if (member.clothing === 'regular_clothes') insulationFactor = 0.90;
+
+                        // Newton's law of cooling: rate proportional to temperature difference
+                        const tempDiff = member.biometrics.bodyTemp - waterTemp;
+                        const coolingRatePerHour = 0.25 * insulationFactor * Math.max(0, tempDiff / 25);
+                        const tempDropThisStep = coolingRatePerHour * (this.speedMultiplier / 3600);
+                        member.biometrics.bodyTemp = Math.max(27, member.biometrics.bodyTemp - tempDropThisStep);
+
+                        // Oxygen saturation drops with hypothermia
+                        if (member.biometrics.bodyTemp < 35) {
+                            member.biometrics.oxygenSat = Math.max(70, 98 - (35 - member.biometrics.bodyTemp) * 3);
+                        }
+
                         if (hoursInWater < 0.05) {
-                            member.biometrics.heartRate = Math.min(180, 160 + Math.random() * 20);
+                            member.biometrics.heartRate = Math.min(180, 155 + Math.random() * 25);
                         } else {
-                            const tempDrop = this.PHYSICS.BODY_TEMP_DROP * hoursInWater * insulationFactor;
-                            member.biometrics.bodyTemp = Math.max(30, this.PHYSICS.BODY_TEMP_NORMAL - tempDrop);
-                            
                             if (hoursInWater < 0.5) {
-                                member.biometrics.heartRate = Math.min(160, 140 + Math.random() * 15);
+                                member.biometrics.heartRate = Math.min(160, 130 + Math.random() * 20);
                             } else if (hoursInWater < 2) {
-                                member.biometrics.heartRate = 120 + Math.random() * 20;
+                                member.biometrics.heartRate = 110 + Math.random() * 20;
                             } else {
                                 member.biometrics.heartRate = Math.max(40, 90 - (hoursInWater * 15));
                             }
                         }
-                        
+
                         if (member.biometrics.bodyTemp < 33) {
                             member.conscious = false;
                             member.biometrics.heartRate *= 0.8;
                         }
-                        
+
                         if (member.biometrics.bodyTemp < 28) {
                             member.biometrics.heartRate = 0;
                         }
@@ -1509,6 +1552,7 @@
                 
                 victim.status = 'mob';
                 victim.mobTime = Date.now();
+                victim.mobTick = this.simulationTime;
                 
                 // FIXED: Position is exactly at vessel position plus small fall offset
                 victim.position = { 
@@ -1552,20 +1596,26 @@
                 const drift = this.calculateDrift(victim);
                 const survival = this.calculateSurvivalTime(victim);
                 const distance = this.calculateDistance(this.vessel.position, victim.position);
+                const bearing = this.calculateHeading(this.vessel.position, victim.position);
                 
                 details.innerHTML = `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div><strong style="color: #ff8888;">CREW:</strong><br>${victim.name}<br><span style="color: #888; font-size: 0.8rem;">${victim.role}</span></div>
-                        <div><strong style="color: #ff8888;">CLOTHING:</strong><br>${victim.clothing.replace('_', ' ')}</div>
+                        <div><strong style="color: #ff8888;">CLOTHING:</strong><br>${this.formatClothing(victim.clothing)}</div>
                         <div><strong style="color: #ff8888;">MOB POSITION:</strong><br>${this.formatCoords(victim.position.lat, victim.position.lon)}</div>
-                        <div><strong style="color: #ff8888;">DRIFT:</strong><br>${(drift.totalSpeed * 3600).toFixed(1)} kt</div>
+                        <div><strong style="color: #ff8888;">DRIFT:</strong><br>${drift.totalSpeed.toFixed(2)} kt</div>
                         <div><strong style="color: #ff8888;">HEART RATE:</strong><br>${Math.round(victim.biometrics.heartRate)} bpm</div>
                         <div><strong style="color: #ff8888;">CORE TEMP:</strong><br>${victim.biometrics.bodyTemp.toFixed(1)}°C</div>
-                        <div style="grid-column: 1 / -1;"><strong style="color: #ff8888;">VESSEL DISTANCE:</strong> ${distance.toFixed(2)} NM</div>
+                        <div><strong style="color: #ff8888;">DISTANCE / BEARING:</strong><br>${distance.toFixed(2)} NM @ ${this.formatBearing(bearing)}</div>
+                        <div><strong style="color: #ff8888;">EST. SURVIVAL:</strong><br><span style="color: ${survival > 60 ? '#00ff88' : survival > 20 ? '#ffaa00' : '#ff3333'};">${survival} min</span></div>
                     </div>
                 `;
                 
-                const survivalPercent = Math.min(100, (survival / 120) * 100);
+                const maxSurvival = this.calculateSurvivalTime({
+                    ...victim,
+                    biometrics: { bodyTemp: this.PHYSICS.BODY_TEMP_NORMAL, heartRate: this.PHYSICS.HEART_RATE_BASE, oxygenSat: this.PHYSICS.OXYGEN_SAT_NORMAL }
+                });
+                const survivalPercent = Math.min(100, (survival / Math.max(1, maxSurvival)) * 100);
                 const bar = document.getElementById('survival-bar');
                 if (bar) {
                     bar.style.width = survivalPercent + '%';
@@ -1621,44 +1671,59 @@
 
             calculateSurvivalTime(person) {
                 const waterTemp = this.environment.waterTemp;
+                // IAMSAR-based survival time estimates (minutes) for unprotected person
                 let baseTime;
-                
-                if (waterTemp >= 15) baseTime = 360;
+                if (waterTemp >= 25) baseTime = 720;
+                else if (waterTemp >= 20) baseTime = 480;
+                else if (waterTemp >= 15) baseTime = 360;
                 else if (waterTemp >= 10) baseTime = 180;
-                else if (waterTemp >= 5) baseTime = 90;
-                else baseTime = 45;
-                
-                if (person.clothing === 'immersion_suit') baseTime *= 3;
+                else if (waterTemp >= 5)  baseTime = 90;
+                else if (waterTemp >= 2)  baseTime = 45;
+                else baseTime = 30;
+
+                // Clothing protection factor
+                if (person.clothing === 'immersion_suit') baseTime *= 4.0;
+                else if (person.clothing === 'work_uniform') baseTime *= 1.5;
                 else if (person.clothing === 'safety_vest') baseTime *= 1.2;
-                
-                const massFactor = person.weight / 70;
-                baseTime *= Math.sqrt(massFactor);
-                
-                const elapsed = (this.PHYSICS.BODY_TEMP_NORMAL - person.biometrics.bodyTemp) / this.PHYSICS.BODY_TEMP_DROP;
-                return Math.max(0, Math.round(baseTime - (elapsed * 60)));
+
+                // Body mass factor: larger mass = slower cooling
+                baseTime *= Math.sqrt(person.weight / 70);
+
+                // Remaining time based on current core temperature
+                const tempDropSoFar = this.PHYSICS.BODY_TEMP_NORMAL - person.biometrics.bodyTemp;
+                const fractionUsed = tempDropSoFar / (this.PHYSICS.BODY_TEMP_NORMAL - this.PHYSICS.BODY_TEMP_CARDIAC_ARREST);
+                return Math.max(0, Math.round(baseTime * (1 - fractionUsed)));
             },
 
             setSimulationSpeed(speed) {
                 this.speedMultiplier = parseInt(speed);
                 const display = document.getElementById('speed-display');
                 if (display) display.textContent = speed + 'x';
-                
-                clearInterval(this.simulationInterval);
-                this.simulationInterval = setInterval(() => this.simulationStep(), 1000 / this.speedMultiplier);
             },
 
             setEnvironment(preset) {
                 this.environment = { ...this.ENVIRONMENT_PRESETS[preset] };
+                const env = this.environment;
                 const windEl = document.getElementById('wind-data');
-                if (windEl) windEl.textContent = 
-                    `Wind: ${this.environment.windSpeed}kt ${this.getCardinalDir(this.environment.windDir)}`;
-                this.logEvent('ENV', `Environment: ${this.environment.currentName}`);
+                if (windEl) windEl.innerHTML =
+                    `${this.formatDirectionArrow(env.windDir)} Wind: ${env.windSpeed}kt ${this.getCardinalDir(env.windDir)} (${env.windDir}°)`;
+                const currentEl = document.getElementById('env-current');
+                if (currentEl) currentEl.innerHTML =
+                    `${this.formatDirectionArrow(env.currentDir, '0.8rem')} Current: ${env.currentSpeed}kt ${this.getCardinalDir(env.currentDir)}`;
+                const waveEl = document.getElementById('env-wave');
+                if (waveEl) waveEl.textContent = `Wave Height: ${env.waveHeight}m`;
+                const tempEl = document.getElementById('env-water-temp');
+                if (tempEl) tempEl.textContent = `Water Temp: ${env.waterTemp}°C`;
+                const visEl = document.getElementById('env-visibility');
+                if (visEl) visEl.textContent = `Visibility: ${env.visibility} NM`;
+                this.logEvent('ENV', `Environment: ${env.currentName}`);
             },
 
             resetSimulation() {
                 this.mobVictim = null;
                 this.recoveryMode = false;
                 this.sarPatternActive = false;
+                this.simulationTime = 0;
                 
                 const indicator = document.getElementById('maneuver-indicator');
                 if (indicator) indicator.style.display = 'none';
@@ -1698,16 +1763,16 @@
             updateTrail() {
                 if (!MapManager.map || this.trailHistory.length < 2) return;
                 
-                if (this.vesselTrail) {
-                    MapManager.map.removeLayer(this.vesselTrail);
-                }
-                
                 const points = this.trailHistory.map(p => [p.lat, p.lon]);
-                this.vesselTrail = L.polyline(points, {
-                    color: '#00d4ff',
-                    weight: 2,
-                    opacity: 0.5
-                }).addTo(MapManager.map);
+                if (this.vesselTrail) {
+                    this.vesselTrail.setLatLngs(points);
+                } else {
+                    this.vesselTrail = L.polyline(points, {
+                        color: '#00d4ff',
+                        weight: 2,
+                        opacity: 0.5
+                    }).addTo(MapManager.map);
+                }
             },
 
             updateUI() {
@@ -1736,22 +1801,49 @@
                 if (statAlerts) statAlerts.textContent = activeAlerts;
                 
                 const mobDistEl = document.getElementById('mob-distance');
+                const mobBrgEl = document.getElementById('mob-bearing');
                 if (mobDistEl) {
                     if (this.mobVictim) {
                         const dist = this.calculateDistance(this.vessel.position, this.mobVictim.position);
+                        const brg = this.calculateHeading(this.vessel.position, this.mobVictim.position);
                         mobDistEl.textContent = dist.toFixed(2);
+                        if (mobBrgEl) mobBrgEl.textContent = Math.round(brg) + '°';
                     } else {
                         mobDistEl.textContent = '--';
+                        if (mobBrgEl) mobBrgEl.textContent = '---°';
+                    }
+                }
+
+                const survTimeCard = document.getElementById('survival-time-card');
+                const survTimeEl = document.getElementById('survival-time');
+                if (survTimeCard && survTimeEl) {
+                    if (this.mobVictim) {
+                        survTimeCard.style.display = 'block';
+                        const survMins = this.calculateSurvivalTime(this.mobVictim);
+                        const color = survMins > 60 ? 'var(--safe-green)' :
+                                      survMins > 20 ? 'var(--warning-yellow)' : 'var(--alert-red)';
+                        survTimeEl.style.color = color;
+                        survTimeEl.textContent = survMins > 0 ? Math.round(survMins) : 'CRITICAL';
+                    } else {
+                        survTimeCard.style.display = 'none';
                     }
                 }
                 
                 const crewList = document.getElementById('crew-list');
                 if (crewList) {
                     crewList.innerHTML = this.crew.map(c => {
-                        const statusColor = c.status === 'mob' ? '#ff00ff' : c.status === 'safe' ? '#00ff88' : '#ffaa00';
+                        const statusColor = c.status === 'mob' ? '#ff00ff' :
+                                            c.status === 'safe' ? '#00ff88' : '#ffaa00';
                         const temp = c.biometrics.bodyTemp.toFixed(1);
-                        const tempColor = temp < 35 ? '#ff3333' : temp < 37 ? '#ffaa00' : '#00ff88';
-                        
+                        const tempColor = temp < 32 ? '#ff3333' :
+                                          temp < 35 ? '#ffaa00' : '#00ff88';
+                        const hrColor = c.biometrics.heartRate > 150 ? '#ff3333' :
+                                        c.biometrics.heartRate < 50 ? '#ff3333' : '#00ff88';
+                        const o2Color = (c.biometrics.oxygenSat || 98) < 90 ? '#ff3333' :
+                                        (c.biometrics.oxygenSat || 98) < 95 ? '#ffaa00' : '#00ff88';
+                        const statusLabel = c.status === 'mob' ? '⚠️ MAN OVERBOARD' :
+                                            c.conscious === false ? '❌ UNCONSCIOUS' :
+                                            c.status.toUpperCase();
                         return `
                         <div style="padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 5px; border-left: 3px solid ${statusColor};">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1759,12 +1851,13 @@
                                 <span style="font-size: 0.7rem; color: #666;">${c.id}</span>
                             </div>
                             <div style="color: ${statusColor}; font-size: 0.8rem; margin-top: 4px;">
-                                ${c.status === 'mob' ? '⚠️ MAN OVERBOARD' : c.status.toUpperCase()}
+                                ${statusLabel}
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.75rem; color: #aaa;">
-                                <span>❤️ ${Math.round(c.biometrics.heartRate)} bpm</span>
-                                <span style="color: ${tempColor}">🌡️ ${temp}°C</span>
-                                <span>🔋 ${Math.round(c.deviceBattery)}%</span>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-top: 5px; font-size: 0.75rem;">
+                                <span style="color: ${hrColor};">❤️ ${Math.round(c.biometrics.heartRate)} bpm</span>
+                                <span style="color: ${tempColor};">🌡️ ${temp}°C</span>
+                                <span style="color: ${o2Color};">O₂ ${Math.round(c.biometrics.oxygenSat || 98)}%</span>
+                                <span style="color: ${c.deviceBattery < 20 ? '#ff3333' : '#aaa'};">🔋 ${Math.round(c.deviceBattery)}%</span>
                             </div>
                         </div>
                     `}).join('');
@@ -1837,6 +1930,19 @@
             getCardinalDir(degrees) {
                 const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
                 return directions[Math.round(degrees / 22.5) % 16];
+            },
+
+            formatBearing(degrees) {
+                return `${Math.round(degrees)}° ${this.getCardinalDir(degrees)}`;
+            },
+
+            formatClothing(clothing) {
+                return clothing.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            },
+
+            formatDirectionArrow(degrees, fontSize) {
+                const style = fontSize ? `style="transform:rotate(${degrees}deg); font-size:${fontSize};"` : `style="transform:rotate(${degrees}deg);"`;
+                return `<span class="wind-arrow" aria-hidden="true" ${style}>↑</span>`;
             }
         };
 
